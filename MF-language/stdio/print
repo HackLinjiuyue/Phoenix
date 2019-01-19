@@ -1,0 +1,4 @@
+ldc 3 3
+ldv -1 2
+sv
+rt
