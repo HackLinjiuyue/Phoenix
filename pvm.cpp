@@ -3,6 +3,7 @@
 #include<math.h>
 #include<vector>
 #include<string>
+#include<iostream>
 
 #define true 1
 #define false 0
@@ -22,9 +23,9 @@
 #define iequal 0x0c
 #define fequal 0x0d
 #define sequal 0x0e
-#define NOT 0x0f
-#define OR 0x10
-#define AND 0x11
+#define Not 0x0f
+#define Or 0x10
+#define And 0x11
 #define i_greater 0x12
 #define i_less 0x13
 #define f_greater 0x14
@@ -45,35 +46,18 @@
 #define iprint 0x23
 #define fprint 0x24
 #define sprint 0x25
+#define itof 0x26
+#define ftoi 0x27
+#define itos 0x28
+#define ftos 0x29
+#define pop 0x2a
+#define change_var 0x2b
 
 using namespace std;
 
 FILE *fp=NULL;
 
 wchar_t onget=0,type;
-
-class Pobject{
-public:
-	int type;
-	virtual Pobject* operator+(Pobject *that)=0;
-	virtual Pobject* operator-(Pobject *that)=0;
-	virtual Pobject* operator*(Pobject *that)=0;
-	virtual Pobject* operator/(Pobject *that)=0;
-	virtual Pobject* operator%(Pobject *that)=0;
-	virtual void print()=0;
-	virtual ~Pobject();
-};
-
-class PArray:public Pobject{
-public:
-	~PArray();
-	PArray(){
-		this->type=0;
-	}
-	void add(){
-
-	}
-};
 
 int wcount(wchar_t **s1){
 	int temp=0;
@@ -83,10 +67,10 @@ int wcount(wchar_t **s1){
 	return temp;
 }
 
-int htoi(string s1,int start,int end){
+int htoi(string *s1,int start,int end){
 	int temp=0,sign=0;
 	while(start<end){
-		switch(s1[start]){
+		switch((*s1)[start]){
 			case 'a':sign=10;break;
 			case 'b':sign=11;break;
 			case 'c':sign=12;break;
@@ -94,7 +78,7 @@ int htoi(string s1,int start,int end){
 			case 'e':sign=14;break;
 			case 'f':sign=15;break;
 			default:
-			sign=s1[start]-'0';
+			sign=(*s1)[start]-'0';
 		}
 		temp+=sign*pow(16,end-start-1);
 		start++;
@@ -120,9 +104,11 @@ string get_from_file(int len){
 wchar_t* get_from_code(string code,int start,int len);
 
 int getlen(wchar_t onstr,int isfile){
+	string str;
 	if(onstr=='0'){
 		if(isfile){
-			return htoi(get_from_file(3),0,3)*4;
+			str=get_from_file(3);
+			return htoi(&str,0,3)*4;
 		}
 		else{
 
@@ -137,65 +123,28 @@ int getlen(wchar_t onstr,int isfile){
 	return 0;
 }
 
-string getconst(int isfile){
-	string temp;
-	int count=0;
-	if(isfile){
-		temp=get_from_file(1);
-	}
-	type=temp[0];
-	count=getlen(temp[0],isfile);
-	if(isfile){
-		temp=get_from_file(count);
-	}
-	else{
-
-	}
-	return temp;
-}
-
-void* parse_const(string s1){
+void* parse_const(string *s1){
 	void *temp;
-	double *count=(double*)malloc(sizeof(double));
-	*count=0;
-	string *onstr=new string();
+	string *onstr=NULL;
 	switch(type){
 		case '0':
-		free(count);
-		for(int i=0;s1[i]!=0;i+=2){
+		onstr=new string();
+		for(int i=0;(*s1)[i]!=0;i+=2){
 			*onstr+=htoi(s1,i,i+2);
 		}
 		temp=onstr;
 		break;
 		case '1':
-		*count=htoi(s1,0,7);
-		delete(onstr);
-		temp=count;
+		temp=new int(htoi(s1,0,7));
 		break;
 		case '2':
-		*count=-htoi(s1,0,7);
-		delete(onstr);
-		temp=count;
+		temp=new int(-htoi(s1,0,7));
 		break;
 		case '3':
-		*count=pow(0.1,htoi(s1,0,1))*htoi(s1,1,7);
-		delete(onstr);
-		temp=count;
+		temp=new double(pow(0.1,htoi(s1,0,1))*htoi(s1,1,7));
 		break;
 		case '4':
-		*count=-pow(0.1,htoi(s1,0,1))*htoi(s1,1,7);
-		delete(onstr);
-		temp=count;
-		break;
-		case '5':
-		*count=htoi(s1,0,3);
-		delete(onstr);
-		temp=count;
-		break;
-		case '6':
-		*count=-htoi(s1,0,3);
-		delete(onstr);
-		temp=count;
+		temp=new double(-pow(0.1,htoi(s1,0,1))*htoi(s1,1,7));
 		break;
 	}
 	return temp;
@@ -203,61 +152,97 @@ void* parse_const(string s1){
 
 void Iadd(vector<void*> *stack){
 	*(int*)*(stack->end()-2)=*(int*)*(stack->end()-2)+*(int*)stack->back();
-	free(*(stack->end()-1));
+	delete((int*)*(stack->end()-1));
 	stack->pop_back();
 }
 
 void Isub(vector<void*> *stack){
 	*(int*)*(stack->end()-2)=*(int*)*(stack->end()-2)-*(int*)stack->back();
-	free(*(stack->end()-1));
+	delete((int*)*(stack->end()-1));
 	stack->pop_back();
 }
 
 void Imul(vector<void*> *stack){
 	*(int*)*(stack->end()-2)=*(int*)*(stack->end()-2)**(int*)stack->back();
-	free(*(stack->end()-1));
+	delete((int*)*(stack->end()-1));
 	stack->pop_back();
 }
 
 void Idiv(vector<void*> *stack){
 	*(int*)*(stack->end()-2)=*(int*)*(stack->end()-2)/ *(int*)stack->back();
-	free(*(stack->end()-1));
+	delete((int*)*(stack->end()-1));
 	stack->pop_back();
 }
 
 void Imod(vector<void*> *stack){
 	*(int*)*(stack->end()-2)=*(int*)*(stack->end()-2)-floor(*(int*)*(stack->end()-2)/ *(int*)stack->back())**(int*)stack->back();
-	free(*(stack->end()-1));
+	delete((int*)*(stack->end()-1));
+	stack->pop_back();
+}
+
+void Iequal(vector<void*> *stack){
+	*(int*)*(stack->end()-2)=*(int*)*(stack->end()-2)==*(int*)stack->back();
+	delete((int*)*(stack->end()-1));
+	stack->pop_back();
+}
+
+void Igreater(vector<void*> *stack){
+	*(int*)*(stack->end()-2)=*(int*)*(stack->end()-2)>*(int*)stack->back();
+	delete((int*)*(stack->end()-1));
+	stack->pop_back();
+}
+
+void Iless(vector<void*> *stack){
+	*(int*)*(stack->end()-2)=*(int*)*(stack->end()-2)<*(int*)stack->back();
+	delete((int*)*(stack->end()-1));
 	stack->pop_back();
 }
 
 void Fadd(vector<void*> *stack){
 	*(double*)*(stack->end()-2)=*(double*)*(stack->end()-2)+*(double*)stack->back();
-	free(*(stack->end()-1));
+	delete((double*)*(stack->end()-1));
 	stack->pop_back();
 }
 
 void Fsub(vector<void*> *stack){
 	*(double*)*(stack->end()-2)=*(double*)*(stack->end()-2)-*(double*)stack->back();
-	free(*(stack->end()-1));
+	delete((double*)*(stack->end()-1));
 	stack->pop_back();
 }
 
 void Fmul(vector<void*> *stack){
 	*(double*)*(stack->end()-2)=*(double*)*(stack->end()-2)**(double*)stack->back();
-	free(*(stack->end()-1));
+	delete((double*)*(stack->end()-1));
 	stack->pop_back();
 }
 
 void Fdiv(vector<void*> *stack){
 	*(double*)*(stack->end()-2)=*(double*)*(stack->end()-2)/ *(double*)stack->back();
-	free(*(stack->end()-1));
+	delete((double*)*(stack->end()-1));
 	stack->pop_back();
 }
 
 void Fmod(vector<void*> *stack){
 	*(double*)*(stack->end()-2)=*(double*)*(stack->end()-2)-floor(*(double*)*(stack->end()-2)/ *(double*)stack->back())**(double*)stack->back();
-	free(*(stack->end()-1));
+	delete((double*)*(stack->end()-1));
+	stack->pop_back();
+}
+
+void Fequal(vector<void*> *stack){
+	*(double*)*(stack->end()-2)=*(double*)*(stack->end()-2)== *(double*)stack->back();
+	delete((double*)*(stack->end()-1));
+	stack->pop_back();
+}
+
+void Fgreater(vector<void*> *stack){
+	*(double*)*(stack->end()-2)=*(double*)*(stack->end()-2)>*(double*)stack->back();
+	delete((double*)*(stack->end()-1));
+	stack->pop_back();
+}
+
+void Fless(vector<void*> *stack){
+	*(double*)*(stack->end()-2)=*(double*)*(stack->end()-2)<*(double*)stack->back();
+	delete((double*)*(stack->end()-1));
 	stack->pop_back();
 }
 
@@ -267,15 +252,37 @@ void Sadd(vector<void*> *stack){
 	stack->pop_back();
 }
 
+void Sequal(vector<void*> *stack){
+	*(string*)*(stack->end()-2)=*(string*)*(stack->end()-2)==*(string*)stack->back();
+	delete((string*)*(stack->end()-1));
+	stack->pop_back();
+}
+
+void NOT(vector<void*> *stack){
+	*(int*)(*(stack->end()-1))=!*(int*)(*(stack->end()-1));
+}
+
+void OR(vector<void*> *stack){
+	*(int*)*(stack->end()-2)=*(int*)*(stack->end()-2)||*(int*)stack->back();
+	delete((int*)*(stack->end()-1));
+	stack->pop_back();
+}
+
+void AND(vector<void*> *stack){
+	*(int*)*(stack->end()-2)=*(int*)*(stack->end()-2)&&*(int*)stack->back();
+	delete((int*)*(stack->end()-1));
+	stack->pop_back();
+}
+
 void Iprint(vector<void*> *stack){
-	printf("%d\n",*(int*)stack->back());
-	free(*(stack->end()-1));
+	printf("%i\n",*(int*)stack->back());
+	delete((int*)*(stack->end()-1));
 	stack->pop_back();
 }
 
 void Fprint(vector<void*> *stack){
 	printf("%f\n",*(double*)stack->back());
-	free(*(stack->end()-1));
+	delete((double*)*(stack->end()-1));
 	stack->pop_back();
 }
 
@@ -289,10 +296,21 @@ void Sprint(vector<void*> *stack){
 	stack->pop_back();
 }
 
+void Push_fast(vector<void*> *stack,int isfile){
+	string onstr;
+	if(isfile){
+		onstr=get_from_file(1);
+	}
+	isfile=getlen(onstr[0],isfile);
+	type=onstr[0];
+	onstr=get_from_file(isfile);
+	stack->push_back(parse_const(&onstr));
+}
+
 void vm(int isfile){
 	string code;
 	int sign=0;
-	vector<void*> stack;
+	vector<void*> stack,pool,var;
 	while(!feof(fp)){
 		if(isfile){
 			code=get_from_file(4);
@@ -303,8 +321,115 @@ void vm(int isfile){
 		if(feof(fp)){
 			break;
 		}
-		switch(htoi(code,2,4)){
-
+		switch(htoi(&code,2,4)){
+			case null:
+			break;
+			case iadd:
+			Iadd(&stack);
+			break;
+			case isub:
+			Isub(&stack);
+			break;
+			case imul:
+			Imul(&stack);
+			break;
+			case idiv:
+			Idiv(&stack);
+			break;
+			case imod:
+			Imod(&stack);
+			break;
+			case fadd:
+			Fadd(&stack);
+			break;
+			case fsub:
+			Fsub(&stack);
+			break;
+			case fmul:
+			Fmul(&stack);
+			break;
+			case fdiv:
+			Fdiv(&stack);
+			break;
+			case fmod:
+			Fmod(&stack);
+			break;
+			case sadd:
+			Sadd(&stack);
+			break;
+			case iequal:
+			Iequal(&stack);
+			break;
+			case fequal:
+			Fequal(&stack);
+			break;
+			case sequal:
+			Sequal(&stack);
+			break;
+			case Not:
+			NOT(&stack);
+			break;
+			case Or:
+			OR(&stack);
+			break;
+			case And:
+			AND(&stack);
+			break;
+			case i_greater:
+			Igreater(&stack);
+			break;
+			case i_less:
+			Iless(&stack);
+			break;
+			case f_greater:
+			Fgreater(&stack);
+			break;
+			case f_less:
+			Fless(&stack);
+			break;
+			case push_fast:
+			Push_fast(&stack,isfile);
+			break;
+			case push_const:
+			Push_fast(&stack,isfile);
+			sign=*(int*)stack.back();
+			delete((int*)*(stack.end()-1));
+			stack.pop_back();
+			stack.push_back(pool[sign]);
+			break;
+			case push_var:
+			Push_fast(&stack,isfile);
+			sign=*(int*)stack.back();
+			delete((int*)*(stack.end()-1));
+			stack.pop_back();
+			stack.push_back(var[sign]);
+			break;
+			case add_const:
+			Push_fast(&pool,isfile);
+			break;
+			case add_var:
+			var.push_back(stack.back());
+			stack.pop_back();
+			break;
+			case iprint:
+			Iprint(&stack);
+			break;
+			case fprint:
+			Fprint(&stack);
+			break;
+			case sprint:
+			Sprint(&stack);
+			break;
+			case pop:
+			stack.pop_back();//待添加类型信息记录以及释放void*的内存
+			break;
+			case change_var:
+			sign=*(int*)stack.back();
+			delete((int*)*(stack.end()-1));
+			stack.pop_back();
+			var[sign]=stack.back();
+			stack.pop_back();
+			break;
 		}
 	}
 }
