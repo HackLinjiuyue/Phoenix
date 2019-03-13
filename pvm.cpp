@@ -31,7 +31,7 @@
 #define f_less 0x15
 #define call 0x16
 #define call_method 0x17
-#define loop 0x18//先弹出代码块后条件
+#define loop 0x18//先弹出条件后代码块
 #define make_block_for_loop 0x19
 #define end_loop 0x1a
 #define make_func 0x1b//先弹出代码块后弹出参数个数
@@ -40,15 +40,21 @@
 #define push_var 0x1e
 #define add_const 0x1f
 #define add_var 0x20
-#define push_array 0x21
-#define get_subscript 0x22
-#define print 0x23
-#define itof 0x24
-#define ftoi 0x25
-#define itos 0x26
-#define ftos 0x27
-#define pop 0x28
-#define change_var 0x29//先弹出索引再弹出值
+#define print 0x21
+#define itof 0x22
+#define ftoi 0x23
+#define itos 0x24
+#define ftos 0x25
+#define pop 0x26
+#define change_var 0x27//先弹出索引再弹出值
+#define push_int_arr 0x28//静态
+#define push_float_arr 0x29//静态
+#define push_Array 0x2a//动态
+#define get_subscript_int 0x2b
+#define get_subscript_float 0x2c
+#define get_subscript_str 0x2d
+#define get_subscript_Array 0x2e
+
 
 #define beginblock_loop "0x19"
 #define endloop "0x1a"
