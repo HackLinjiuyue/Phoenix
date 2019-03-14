@@ -53,10 +53,15 @@
 #define get_subscript 0x2b//先下标再数组
 #define push_item 0x2c//先值再数组
 #define pop_item 0x2d
+#define make_block 0x2e
+#define end_block 0x2f
+#define Return 0x30
 
 
 #define beginblock_loop "0x19"
 #define endloop "0x1a"
+#define beginblock_func "0x2e"
+#define endfunc "0x2f"
 
 using namespace std;
 
@@ -64,7 +69,7 @@ FILE *fp=NULL;
 
 wchar_t onget=0;
 
-int type; 
+int type,func_count=0;
 
 void Print(vector<void*> *stack,vector<int> *s_type);
 
@@ -114,6 +119,22 @@ public:
 	};
 };
 
+class func{
+public:
+	string *code;
+	int argc,no;
+	func(string *code,int argc){
+		this->code=new string(*code);
+		this->argc=argc;
+		this->no=func_count;
+		func_count++;
+	}
+	~func(){
+		delete(this->code);
+		delete(this);
+	}
+};
+
 void release(List *temp);
 
 vector<List*> path;
@@ -140,6 +161,8 @@ void delete_void(vector<void*> *stack,vector<int> *s_type,int index){
 		break;
 		case 6://list
 		release((List*)*(stack->begin()+index));
+		break;
+		case 7://func
 		break;
 	}
 }
@@ -432,28 +455,26 @@ void Lprint(List* temp){
 void Print(vector<void*> *stack,vector<int> *s_type){
 	switch(s_type->back()-'0'){
 		case 0:
-		Sprint(stack);
+		Sprint(stack->back());
 		break;
 		case 1:
-		Iprint(stack);
+		Iprint(stack->back());
 		break;
 		case 2:
-		Fprint(stack);
+		Fprint(stack->back());
 		break;
 		case 3:
-		IAprint(stack);
+		IAprint(stack->back());
 		break;
 		case 4:
-		FAprint(stack);
+		FAprint(stack->back());
 		break;
 		case 5:
-		Cprint(stack);
+		Cprint(stack->back());
 		break;
 		case 6:
 		Lprint((List*)stack->back());
 		break;
-		default:
-		printf("%d\n",s_type->back()-'0');
 	}
 	Pop(stack,s_type);
 	printf("\n");
@@ -506,7 +527,7 @@ void Loop(vector<void*> *stack,vector<int> *s_type,vector<string*> *loop_s,vecto
 	}
 }
 
-void End_loop(vector<void*> *stack,vector<int> *s_type,vector<string*> *loop_s,vector<int> *loop_p,int *on_loop,int *on_p,int *isfile,string **onstr){
+void End_loop(vector<void*> *stack,vector<int> *s_type,vector<string*> *loop_s,vector<int> *loop_p,int *on_loop,int *on_p,string **onstr){
 	if(*(int*)stack->back()){
 		(*on_p)=0;
 	}
@@ -520,9 +541,16 @@ void End_loop(vector<void*> *stack,vector<int> *s_type,vector<string*> *loop_s,v
 		(*on_loop)--;
 	}
 	Pop(stack,s_type);
-	if(loop_s->size()==0){
-		*isfile=1;
-	}
+}
+
+void Make_func(vector<void*> *stack,vector<int> *s_type,vector<void*> *pool,vector<int> *p_type){
+	int index=*(int*)stack->back(),no;
+	Pop(stack,s_type);
+	string *onstr=(string*)stack->back();
+	func *temp=new func(onstr,index);
+	Pop(stack,s_type);
+	pool->push_back(temp);
+	p_type->push_back('7');
 }
 
 void Make_block_for_loop(vector<void*> *stack,vector<int> *s_type,int isfile,string *code,int *start){
@@ -538,6 +566,26 @@ void Make_block_for_loop(vector<void*> *stack,vector<int> *s_type,int isfile,str
 		}
 		if(kh==0){
 			temp+=endloop;
+			break;
+		}
+		temp+=onstr;
+	}
+	stack->push_back(new string(temp));
+	s_type->push_back(48);
+}
+
+void Make_block_for_func(vector<void*> *stack,vector<int> *s_type,int isfile,string *code,int *start){
+	string onstr,temp="";
+	int kh=1;
+	while(true){
+		onstr=getcode(4,code,start,isfile);
+		if(onstr==beginblock_func){
+			kh++;
+		}
+		else if(onstr==endfunc){
+			kh--;
+		}
+		if(kh==0){
 			break;
 		}
 		temp+=onstr;
@@ -631,12 +679,51 @@ void release(List *temp){
 	path.push_back(temp);
 }
 
+void Call(vector<void*> *stack,vector<int> *s_type,vector<void*> *pool,string **onstr,vector<func*> *on_func,vector<int> *func_p,int *on_p,vector<void*> **var,vector<int> **v_type,vector<vector<void*>* >*v_stack,vector<vector<int>* >*v_s_type){
+	int index=*(int*)stack->back();
+	Pop(stack,s_type);
+	on_func->push_back((func*)(*pool)[index]);
+	*onstr=on_func->back()->code;
+	func_p->push_back(*on_p);
+	*on_p=0;
+	v_stack->push_back(*var);
+	*var=new vector<void*>();
+	v_s_type->push_back(*v_type);
+	*v_type=new vector<int>();
+	for(int i=0;i<on_func->back()->argc;i++){
+		(*var)->push_back(stack->back());
+		(*v_type)->push_back(s_type->back());
+		stack->pop_back();
+		s_type->pop_back();
+	}
+}
+
+void RETURN(string **onstr,vector<string*> *func_s,vector<func*> *on_func,int *on_p,vector<void*> **var,vector<int> **v_type,vector<vector<void*>* >*v_stack,vector<vector<int>* >*v_s_type,vector<int> *func_p){
+	*onstr=func_s->back();
+	func_s->pop_back();
+	on_func->pop_back();
+	*on_p=func_p->back();
+	func_p->pop_back();
+	for(int i=0;i<(*var)->size();i++){
+		delete_void(*var,*v_type,i);
+	}
+	delete(*var);
+	*var=v_stack->back();
+	v_stack->pop_back();
+	delete(*v_type);
+	*v_type=v_s_type->back();
+	v_s_type->pop_back();
+}
+
 void vm(int isfile){
 	string code,*onstr;
-	vector<void*> stack,pool,var;
-	vector<int> s_type,p_type,v_type,loop_p;
-	vector<string*> loop_s;
-	int on_loop=-1,on_p=0;
+	vector<void*> stack,pool,*var=new vector<void*>();
+	vector<int> s_type,p_type,*v_type=new vector<int>(),loop_p,func_p;
+	vector<string*> loop_s,func_s;
+	vector<func*> on_func;
+	vector<vector<void*>* > v_stack;
+	vector<vector<int>* > v_s_type;
+	int on_loop=-1,on_p=0,on_f=-1;
 	while(!feof(fp)){
 		code=getcode(4,onstr,&on_p,isfile);
 		if(feof(fp)){
@@ -728,6 +815,12 @@ void vm(int isfile){
 			Fless(&stack);
 			Pop(&stack,&s_type);
 			break;
+			case call:
+			func_s.push_back(onstr);
+			Call(&stack,&s_type,&pool,&onstr,&on_func,&func_p,&on_p,&var,&v_type,&v_stack,&v_s_type);
+			on_f++;
+			isfile=false;
+			break;
 			case loop:
 			Loop(&stack,&s_type,&loop_s,&loop_p,&onstr,&on_loop,&isfile,&on_p);
 			break;
@@ -740,7 +833,13 @@ void vm(int isfile){
 			}
 			break;
 			case end_loop:
-			End_loop(&stack,&s_type,&loop_s,&loop_p,&on_loop,&on_p,&isfile,&onstr);
+			End_loop(&stack,&s_type,&loop_s,&loop_p,&on_loop,&on_p,&onstr);
+			if(on_f==0&&on_loop==0){
+				isfile=true;
+			}
+			break;
+			case make_func:
+			Make_func(&stack,&s_type,&pool,&p_type);
 			break;
 			case push_fast:
 			Push_fast(&stack,&s_type,isfile,onstr,&on_p);
@@ -749,14 +848,14 @@ void vm(int isfile){
 			Push_var(&stack,&pool,&s_type,&p_type,isfile,&on_p,onstr);
 			break;
 			case push_var:
-			Push_var(&stack,&var,&s_type,&v_type,isfile,&on_p,onstr);
+			Push_var(&stack,var,&s_type,v_type,isfile,&on_p,onstr);
 			break;
 			case add_const:
 			Push_fast(&pool,&s_type,isfile,onstr,&on_p);
 			break;
 			case add_var:
-			var.push_back(stack.back());
-			v_type.push_back(s_type.back());
+			var->push_back(stack.back());
+			v_type->push_back(s_type.back());
 			Pop(&stack,&s_type);
 			break;
 			case print:
@@ -778,7 +877,7 @@ void vm(int isfile){
 			Pop(&stack,&s_type);
 			break;
 			case change_var:
-			Change_var(&stack,&var,&s_type,&v_type);
+			Change_var(&stack,var,&s_type,v_type);
 			break;
 			case push_int_arr:
 			push_arr(&stack,&s_type,'3');
@@ -798,6 +897,16 @@ void vm(int isfile){
 			case pop_item:
 			Pop(&((List*)stack.back())->value,&((List*)stack.back())->type);
 			((List*)stack.back())->length--;
+			break;
+			case make_block:
+			Make_block_for_func(&stack,&s_type,isfile,onstr,&on_p);
+			break;
+			case Return:
+			on_f--;
+			RETURN(&onstr,&func_s,&on_func,&on_p,&var,&v_type,&v_stack,&v_s_type,&func_p);
+			if(on_f==-1&&on_loop==-1){
+				isfile=true;
+			}
 			break;
 		}
 	}
