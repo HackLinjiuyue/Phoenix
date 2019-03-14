@@ -29,7 +29,7 @@
 #define i_less 0x13
 #define f_greater 0x14
 #define f_less 0x15
-#define call 0x16
+#define call 0x16//读取编号获取对象
 #define call_method 0x17
 #define loop 0x18//先弹出条件后代码块
 #define make_block_for_loop 0x19
@@ -50,10 +50,9 @@
 #define push_int_arr 0x28//静态
 #define push_float_arr 0x29//静态
 #define push_Array 0x2a//动态
-#define get_subscript_int 0x2b
-#define get_subscript_float 0x2c
-#define get_subscript_str 0x2d
-#define get_subscript_Array 0x2e
+#define get_subscript 0x2b//先下标再数组
+#define push_item 0x2c//先值再数组
+#define pop_item 0x2d
 
 
 #define beginblock_loop "0x19"
@@ -65,7 +64,59 @@ FILE *fp=NULL;
 
 wchar_t onget=0;
 
-int type;
+int type; 
+
+void Print(vector<void*> *stack,vector<int> *s_type);
+
+class Array{
+public:
+	void **value;
+	int length=0,type;
+	Array(int type,int length=0){
+		this->type=type;
+		this->length=length;
+		this->value=new void*[length];
+		for(int i=0;i<length;i++){
+			switch(type){
+				case '3':
+				this->value[i]=new int(0);
+				break;
+				case '4':
+				this->value[i]=new double(0.0);
+				break;
+			}
+		}
+	};
+	~Array(){
+		for(int i=0;i<this->length;i++){
+			switch(this->type){
+				case '3':
+				delete((int*)this->value[i]);
+				break;
+				case '4':
+				delete((double*)this->value[i]);
+				break;
+			}
+		}
+		delete(this);
+	}
+};
+
+class List{
+public:
+	vector<void*> value;
+	vector<int> type;
+	int length=0;
+	void push_back(void* value,int type){
+		this->value.push_back(value);
+		this->type.push_back(type);
+		this->length++;
+	};
+};
+
+void release(List *temp);
+
+vector<List*> path;
 
 void delete_void(vector<void*> *stack,vector<int> *s_type,int index){
 	switch((*s_type)[index]){
@@ -77,6 +128,18 @@ void delete_void(vector<void*> *stack,vector<int> *s_type,int index){
 		break;
 		case 2://double
 		delete((double*)*(stack->begin()+index));
+		break;
+		case 3://int_arr
+		delete((Array*)*(stack->begin()+index));
+		break;
+		case 4://double_arr
+		delete((Array*)*(stack->begin()+index));
+		break;
+		case 5://char
+		delete((char*)*(stack->begin()+index));
+		break;
+		case 6://list
+		release((List*)*(stack->begin()+index));
 		break;
 	}
 }
@@ -287,20 +350,113 @@ void AND(vector<void*> *stack){
 	*(int*)*(stack->end()-2)=*(int*)*(stack->end()-2)&&*(int*)stack->back();
 }
 
-void Iprint(vector<void*> *stack){
-	printf("%i\n",*(int*)stack->back());
+void Iprint(void *value){
+	printf("%i",*(int*)value);
 }
 
-void Fprint(vector<void*> *stack){
-	printf("%f\n",*(double*)stack->back());
+void Fprint(void *value){
+	printf("%f",*(double*)value);
 }
 
-void Sprint(vector<void*> *stack){
-	string *onstr=(string*)stack->back();
-	for(int i=0;i<onstr->size();i++){
+void Sprint(void *value){
+	string *onstr=(string*)value;
+	int max=onstr->size();
+	printf("\"");
+	for(int i=0;i<max;i++){
 		printf("%c",(*onstr)[i]);
 	}
-	printf("\n" );
+	printf("\"");
+}
+
+void Cprint(void *value){
+	printf("%c",*(char*)value);
+}
+
+void IAprint(void *value){
+	Array *temp=(Array*)value;
+	int i=0,max=temp->length;
+	printf("[");
+	while(i<max-1){
+		printf("%d,",*(int*)(temp->value)[i]);
+		i++;
+	}
+	printf("%d]",*(int*)(temp->value)[i]);
+}
+
+void FAprint(void *value){
+	Array *temp=(Array*)value;
+	int i=0,max=temp->length;
+	printf("[");
+	while(i<max-1){
+		printf("%f,",*(double*)(temp->value)[i]);
+		i++;
+	}
+	printf("%f]",*(double*)(temp->value)[i]);
+}
+
+void Lprint(List* temp){
+	int i=0,max=temp->length;
+	printf("[");
+	while(i<max){
+		switch(temp->type[i]-'0'){
+			case 0:
+			Sprint(temp->value[i]);
+			break;
+			case 1:
+			Iprint(temp->value[i]);
+			break;
+			case 2:
+			Fprint(temp->value[i]);
+			break;
+			case 3:
+			IAprint(temp->value[i]);
+			break;
+			case 4:
+			FAprint(temp->value[i]);
+			break;
+			case 5:
+			Cprint(temp->value[i]);
+			break;
+			case 6:
+			Lprint((List*)temp->value[i]);
+			break;
+		}
+		if(i!=max-1){
+			printf(",");
+		}
+		i++;
+	}
+	printf("]");
+}
+
+void Print(vector<void*> *stack,vector<int> *s_type){
+	switch(s_type->back()-'0'){
+		case 0:
+		Sprint(stack);
+		break;
+		case 1:
+		Iprint(stack);
+		break;
+		case 2:
+		Fprint(stack);
+		break;
+		case 3:
+		IAprint(stack);
+		break;
+		case 4:
+		FAprint(stack);
+		break;
+		case 5:
+		Cprint(stack);
+		break;
+		case 6:
+		Lprint((List*)stack->back());
+		break;
+		default:
+		printf("%d\n",s_type->back()-'0');
+	}
+	Pop(stack,s_type);
+	printf("\n");
 }
 
 void Itof(vector<void*> *stack,vector<int> *s_type){
@@ -347,6 +503,25 @@ void Loop(vector<void*> *stack,vector<int> *s_type,vector<string*> *loop_s,vecto
 	}
 	else{
 		Pop(stack,s_type);
+	}
+}
+
+void End_loop(vector<void*> *stack,vector<int> *s_type,vector<string*> *loop_s,vector<int> *loop_p,int *on_loop,int *on_p,int *isfile,string **onstr){
+	if(*(int*)stack->back()){
+		(*on_p)=0;
+	}
+	else{
+		delete(*onstr);
+		*onstr=loop_s->back();
+		loop_s->pop_back();
+		*on_p=loop_p->back();
+		loop_p->pop_back();
+
+		(*on_loop)--;
+	}
+	Pop(stack,s_type);
+	if(loop_s->size()==0){
+		*isfile=1;
 	}
 }
 
@@ -397,6 +572,63 @@ void Change_var(vector<void*> *stack,vector<void*> *var,vector<int> *s_type,vect
 	*(var->begin()+sign)=stack->back();
 	*(v_type->begin()+sign)=s_type->back();
 	Pop(stack,s_type);
+}
+
+void push_arr(vector<void*> *stack,vector<int> *s_type,int form){
+	Array *temp=new Array(form,*(int*)stack->back());
+	Pop(stack,s_type);
+	stack->push_back(temp);
+	s_type->push_back(form);
+}
+
+void Push_Array(vector<void*> *stack,vector<int> *s_type){
+	if(!path.size()){
+		stack->push_back(new List());
+	}
+	else{
+		stack->push_back(path.back());
+		path.pop_back();
+	}
+	s_type->push_back('6');
+}
+
+void Get_subscript(vector<void*> *stack,vector<int> *s_type){
+	int t,index=*(int*)stack->back();
+	void *temp;
+	Pop(stack,s_type);
+	switch(s_type->back()){
+		case '0':
+		t='5';
+		temp=new char((*(string*)stack->back())[index]);
+		break;
+		case '3':
+		t='1';
+		temp=new int(((int*)stack->back())[index]);
+		break;
+		case '4':
+		t='2';
+		temp=new double(((double*)stack->back())[index]);
+		break;
+	}
+	Pop(stack,s_type);
+	stack->push_back(temp);
+	s_type->push_back(t);
+}
+
+void Push_item(vector<void*> *stack,vector<int> *s_type){
+	void *value=stack->back();
+	stack->pop_back();
+	List *temp=(List*)stack->back();
+	temp->push_back(value,s_type->back());
+	s_type->pop_back();
+}
+
+void release(List *temp){
+	while(temp->length>0){
+		Pop(&temp->value,&temp->type);
+		temp->length--;
+	}
+	path.push_back(temp);
 }
 
 void vm(int isfile){
@@ -508,21 +740,7 @@ void vm(int isfile){
 			}
 			break;
 			case end_loop:
-			if(*(int*)stack.back()){
-				on_p=0;
-			}
-			else{
-				delete(onstr);
-				onstr=loop_s.back();
-				loop_s.pop_back();
-				on_p=loop_p.back();
-				loop_p.pop_back();
-				on_loop--;
-			}
-			Pop(&stack,&s_type);
-			if(loop_s.size()==0){
-				isfile=1;
-			}
+			End_loop(&stack,&s_type,&loop_s,&loop_p,&on_loop,&on_p,&isfile,&onstr);
 			break;
 			case push_fast:
 			Push_fast(&stack,&s_type,isfile,onstr,&on_p);
@@ -542,18 +760,7 @@ void vm(int isfile){
 			Pop(&stack,&s_type);
 			break;
 			case print:
-			switch(s_type.back()-'0'){
-				case 0:
-				Sprint(&stack);
-				break;
-				case 1:
-				Iprint(&stack);
-				break;
-				case 2:
-				Fprint(&stack);
-				break;
-			}
-			Pop(&stack,&s_type);
+			Print(&stack,&s_type);
 			break;
 			case itof:
 			Itof(&stack,&s_type);
@@ -572,6 +779,25 @@ void vm(int isfile){
 			break;
 			case change_var:
 			Change_var(&stack,&var,&s_type,&v_type);
+			break;
+			case push_int_arr:
+			push_arr(&stack,&s_type,'3');
+			break;
+			case push_float_arr:
+			push_arr(&stack,&s_type,'4');
+			break;
+			case push_Array:
+			Push_Array(&stack,&s_type);
+			break;
+			case get_subscript:
+			Get_subscript(&stack,&s_type);
+			break;
+			case push_item:
+			Push_item(&stack,&s_type);
+			break;
+			case pop_item:
+			Pop(&((List*)stack.back())->value,&((List*)stack.back())->type);
+			((List*)stack.back())->length--;
 			break;
 		}
 	}
