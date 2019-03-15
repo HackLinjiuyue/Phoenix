@@ -47,8 +47,8 @@
 #define ftos 0x25
 #define pop 0x26
 #define change_var 0x27//先弹出索引再弹出值
-#define push_int_arr 0x28//静态
-#define push_float_arr 0x29//静态
+#define push_int_arr 0x28//静态 1s
+#define push_float_arr 0x29//静态 1s
 #define push_Array 0x2a//动态
 #define get_subscript 0x2b//先下标再数组
 #define push_item 0x2c//先值再数组
@@ -56,7 +56,7 @@
 #define make_block 0x2e
 #define end_block 0x2f
 #define Return 0x30
-
+#define change_arr_var 0x31//先数组再索引再值
 
 #define beginblock_loop "0x19"
 #define endloop "0x1a"
@@ -103,7 +103,6 @@ public:
 				break;
 			}
 		}
-		delete(this);
 	}
 };
 
@@ -141,28 +140,28 @@ vector<List*> path;
 
 void delete_void(vector<void*> *stack,vector<int> *s_type,int index){
 	switch((*s_type)[index]){
-		case 0://str
+		case '0'://str
 		delete((string*)*(stack->begin()+index));
 		break;
-		case 1://int
+		case '1'://int
 		delete((int*)*(stack->begin()+index));
 		break;
-		case 2://double
+		case '2'://double
 		delete((double*)*(stack->begin()+index));
 		break;
-		case 3://int_arr
+		case '3'://int_arr
 		delete((Array*)*(stack->begin()+index));
 		break;
-		case 4://double_arr
+		case '4'://double_arr
 		delete((Array*)*(stack->begin()+index));
 		break;
-		case 5://char
+		case '5'://char
 		delete((char*)*(stack->begin()+index));
 		break;
-		case 6://list
+		case '6'://list
 		release((List*)*(stack->begin()+index));
 		break;
-		case 7://func
+		case '7'://func
 		break;
 	}
 }
@@ -421,26 +420,26 @@ void Lprint(List* temp){
 	int i=0,max=temp->length;
 	printf("[");
 	while(i<max){
-		switch(temp->type[i]-'0'){
-			case 0:
+		switch(temp->type[i]){
+			case '0':
 			Sprint(temp->value[i]);
 			break;
-			case 1:
+			case '1':
 			Iprint(temp->value[i]);
 			break;
-			case 2:
+			case '2':
 			Fprint(temp->value[i]);
 			break;
-			case 3:
+			case '3':
 			IAprint(temp->value[i]);
 			break;
-			case 4:
+			case '4':
 			FAprint(temp->value[i]);
 			break;
-			case 5:
+			case '5':
 			Cprint(temp->value[i]);
 			break;
-			case 6:
+			case '6':
 			Lprint((List*)temp->value[i]);
 			break;
 		}
@@ -453,26 +452,26 @@ void Lprint(List* temp){
 }
 
 void Print(vector<void*> *stack,vector<int> *s_type){
-	switch(s_type->back()-'0'){
-		case 0:
+	switch(s_type->back()){
+		case '0':
 		Sprint(stack->back());
 		break;
-		case 1:
+		case '1':
 		Iprint(stack->back());
 		break;
-		case 2:
+		case '2':
 		Fprint(stack->back());
 		break;
-		case 3:
+		case '3':
 		IAprint(stack->back());
 		break;
-		case 4:
+		case '4':
 		FAprint(stack->back());
 		break;
-		case 5:
+		case '5':
 		Cprint(stack->back());
 		break;
-		case 6:
+		case '6':
 		Lprint((List*)stack->back());
 		break;
 	}
@@ -537,7 +536,6 @@ void End_loop(vector<void*> *stack,vector<int> *s_type,vector<string*> *loop_s,v
 		loop_s->pop_back();
 		*on_p=loop_p->back();
 		loop_p->pop_back();
-
 		(*on_loop)--;
 	}
 	Pop(stack,s_type);
@@ -609,17 +607,95 @@ void Push_var(vector<void*> *stack,vector<void*> *var,vector<int> *s_type,vector
 	Push_fast(stack,s_type,isfile,code,start);
 	int sign=*(int*)stack->back();
 	Pop(stack,s_type);
-	stack->push_back((*var)[sign]);
+	switch((*v_type)[sign]){
+		case '0':
+		stack->push_back(new string(*(string*)(*var)[sign]));
+		break;
+		case '1':
+		stack->push_back(new int(*(int*)(*var)[sign]));
+		break;
+		case '2':
+		stack->push_back(new double(*(double*)(*var)[sign]));
+		break;
+		case '3':
+		stack->push_back(new Array(*(Array*)(*var)[sign]));
+		break;
+		case '4':
+		stack->push_back(new Array(*(Array*)(*var)[sign]));
+		break;
+		case '5':
+		stack->push_back(new char(*(char*)(*var)[sign]));
+		break;
+		case '6':
+		stack->push_back(new List(*(List*)(*var)[sign]));
+		break;
+	}
 	s_type->push_back((*v_type)[sign]);
 }
 
 void Change_var(vector<void*> *stack,vector<void*> *var,vector<int> *s_type,vector<int> *v_type){
-	int sign=*(int*)stack->back();
+	int index=*(int*)stack->back();
 	Pop(stack,s_type);
-	delete_void(var,v_type,sign);
-	*(var->begin()+sign)=stack->back();
-	*(v_type->begin()+sign)=s_type->back();
+	delete_void(var,v_type,index);
+	switch(s_type->back()){
+		case '0':
+		*(var->begin()+index)=new string(*(string*)stack->back());
+		break;
+		case '1':
+		*(var->begin()+index)=new int(*(int*)stack->back());
+		break;
+		case '2':
+		*(var->begin()+index)=new double(*(double*)stack->back());
+		break;
+		case '3':
+		*(var->begin()+index)=new Array(*(Array*)stack->back());
+		break;
+		case '4':
+		*(var->begin()+index)=new Array(*(Array*)stack->back());
+		break;
+		case '5':
+		*(var->begin()+index)=new char(*(char*)stack->back());
+		break;
+		case '6':
+		*(var->begin()+index)=new List(*(List*)stack->back());
+		break;
+	}
 	Pop(stack,s_type);
+}
+
+void Change_arr_var(vector<void*> *stack,vector<int> *s_type){
+	int index;
+	Array *temp;
+	List *linshi;
+	switch(s_type->back()){
+		case '6':
+		linshi=(List*)stack->back();
+		index=s_type->back();
+		stack->pop_back();
+		s_type->pop_back();
+		Change_var(stack,&linshi->value,s_type,&linshi->type);
+		stack->push_back(linshi);
+		s_type->push_back(index);
+		break;
+		default:
+		temp=(Array*)stack->back();
+		type=s_type->back();
+		stack->pop_back();
+		s_type->pop_back();
+		index=*(int*)stack->back();
+		Pop(stack,s_type);
+		if(type=='3'){
+			delete((int*)temp->value[index]);
+			temp->value[index]=new int(*(int*)stack->back());
+		}
+		else{
+			delete((double*)temp->value[index]);
+			temp->value[index]=new double(*(double*)stack->back());
+		}
+		Pop(stack,s_type);
+		stack->push_back(temp);
+		s_type->push_back(type);
+	}
 }
 
 void push_arr(vector<void*> *stack,vector<int> *s_type,int form){
@@ -834,7 +910,7 @@ void vm(int isfile){
 			break;
 			case end_loop:
 			End_loop(&stack,&s_type,&loop_s,&loop_p,&on_loop,&on_p,&onstr);
-			if(on_f==0&&on_loop==0){
+			if(on_f==-1&&on_loop==-1){
 				isfile=true;
 			}
 			break;
@@ -877,6 +953,7 @@ void vm(int isfile){
 			Pop(&stack,&s_type);
 			break;
 			case change_var:
+			Push_fast(&stack,&s_type,isfile,&code,&on_p);
 			Change_var(&stack,var,&s_type,v_type);
 			break;
 			case push_int_arr:
@@ -908,6 +985,13 @@ void vm(int isfile){
 				isfile=true;
 			}
 			break;
+			case change_arr_var:
+			Change_arr_var(&stack,&s_type);
+			break;
+			default:
+			printf("Error:Unknown code");
+			Sprint(&code);
+			printf("\n");
 		}
 	}
 }
