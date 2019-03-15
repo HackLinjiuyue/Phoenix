@@ -1,0 +1,9 @@
+false code:
+array a;
+a.push(1);
+a[0]=3;
+print(a);
+
+bytecode:
+0x1c 1000 0003 0x1c 1000 0000 0x2a 0x1c
+1000 0001 0x2c 0x31 0x21
