@@ -57,7 +57,6 @@
 #define end_block 0x2f//标记
 #define Return 0x30//返回值压栈后使用
 #define change_arr_var 0x31//先数组再索引再值
-#define delete_var 0x32//后面需要跟常数（变量索引）
 
 #define beginblock_loop "0x19"
 #define endloop "0x1a"
@@ -159,6 +158,7 @@ void delete_void(vector<void*> *stack,vector<int> *s_type,int index){
 		case '7'://func
 		break;
 	}
+	(*s_type)[index]=-1;
 }
 
 void Pop(vector<void*> *stack,vector<int> *s_type){
@@ -437,6 +437,8 @@ void Lprint(List* temp){
 			case '6':
 			Lprint((List*)temp->value[i]);
 			break;
+			default:
+			printf("null");
 		}
 		if(i!=max-1){
 			printf(",");
@@ -469,6 +471,8 @@ void Print(vector<void*> *stack,vector<int> *s_type){
 		case '6':
 		Lprint((List*)stack->back());
 		break;
+		default:
+		printf("null");
 	}
 	Pop(stack,s_type);
 	printf("\n");
@@ -998,11 +1002,6 @@ void vm(int isfile){
 			break;
 			case change_arr_var:
 			Change_arr_var(&stack,&s_type);
-			break;
-			case delete_var:
-			Push_fast(&stack,&s_type,isfile,onstr,&on_p);
-			delete_void(var,v_type,*(int*)stack.back());
-			Pop(&stack,&s_type);
 			break;
 			default:
 			printf("Error:Unknown code");
