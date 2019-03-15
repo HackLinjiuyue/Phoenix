@@ -72,6 +72,7 @@ wchar_t onget=0;
 int type,func_count=0;
 
 void Print(vector<void*> *stack,vector<int> *s_type);
+void Sprint(void *value);
 
 class Array{
 public:
@@ -663,6 +664,34 @@ void Change_var(vector<void*> *stack,vector<void*> *var,vector<int> *s_type,vect
 	Pop(stack,s_type);
 }
 
+void Add_var(vector<void*> *stack,vector<void*> *var,vector<int> *s_type,vector<int> *v_type){
+	switch(s_type->back()){
+		case '0':
+		var->push_back(new string(*(string*)stack->back()));
+		break;
+		case '1':
+		var->push_back(new int(*(int*)stack->back()));
+		break;
+		case '2':
+		var->push_back(new double(*(double*)stack->back()));
+		break;
+		case '3':
+		var->push_back(new Array(*(Array*)stack->back()));
+		break;
+		case '4':
+		var->push_back(new Array(*(Array*)stack->back()));
+		break;
+		case '5':
+		var->push_back(new char(*(char*)stack->back()));
+		break;
+		case '6':
+		var->push_back(new List(*(List*)stack->back()));
+		break;
+	}
+	v_type->push_back(s_type->back());
+	Pop(stack,s_type);
+}
+
 void Change_arr_var(vector<void*> *stack,vector<int> *s_type){
 	int index;
 	Array *temp;
@@ -930,9 +959,7 @@ void vm(int isfile){
 			Push_fast(&pool,&s_type,isfile,onstr,&on_p);
 			break;
 			case add_var:
-			var->push_back(stack.back());
-			v_type->push_back(s_type.back());
-			Pop(&stack,&s_type);
+			Add_var(&stack,var,&s_type,v_type);
 			break;
 			case print:
 			Print(&stack,&s_type);
