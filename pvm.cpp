@@ -57,6 +57,7 @@
 #define end_block 0x2f//标记
 #define Return 0x30//返回值压栈后使用
 #define change_arr_var 0x31//先数组再索引再值
+#define delete_var 0x32//后面需要跟常数（变量索引）
 
 #define beginblock_loop "0x19"
 #define endloop "0x1a"
@@ -73,6 +74,7 @@ int type,func_count=0;
 
 void Print(vector<void*> *stack,vector<int> *s_type);
 void Sprint(void *value);
+void delete_void(vector<void*> *stack,vector<int> *s_type,int index);
 
 class Array{
 public:
@@ -112,11 +114,6 @@ public:
 	vector<void*> value;
 	vector<int> type;
 	int length=0;
-	void push_back(void* value,int type){
-		this->value.push_back(value);
-		this->type.push_back(type);
-		this->length++;
-	};
 };
 
 class func{
@@ -131,11 +128,8 @@ public:
 	}
 	~func(){
 		delete(this->code);
-		delete(this);
 	}
 };
-
-void release(List *temp);
 
 vector<List*> path;
 
@@ -160,7 +154,7 @@ void delete_void(vector<void*> *stack,vector<int> *s_type,int index){
 		delete((char*)*(stack->begin()+index));
 		break;
 		case '6'://list
-		release((List*)*(stack->begin()+index));
+		delete((List*)*(stack->begin()+index));
 		break;
 		case '7'://func
 		break;
@@ -692,6 +686,12 @@ void Add_var(vector<void*> *stack,vector<void*> *var,vector<int> *s_type,vector<
 	Pop(stack,s_type);
 }
 
+void Push_item(vector<void*> *stack,vector<int> *s_type){
+	List *temp=(List*)*(stack->end()-2);
+	Add_var(stack,&temp->value,s_type,&temp->type);
+	temp->length++;
+}
+
 void Change_arr_var(vector<void*> *stack,vector<int> *s_type){
 	int index;
 	Array *temp;
@@ -766,22 +766,6 @@ void Get_subscript(vector<void*> *stack,vector<int> *s_type){
 	Pop(stack,s_type);
 	stack->push_back(temp);
 	s_type->push_back(t);
-}
-
-void Push_item(vector<void*> *stack,vector<int> *s_type){
-	void *value=stack->back();
-	stack->pop_back();
-	List *temp=(List*)stack->back();
-	temp->push_back(value,s_type->back());
-	s_type->pop_back();
-}
-
-void release(List *temp){
-	while(temp->length>0){
-		Pop(&temp->value,&temp->type);
-		temp->length--;
-	}
-	path.push_back(temp);
 }
 
 void Call(vector<void*> *stack,vector<int> *s_type,vector<void*> *pool,string **onstr,vector<func*> *on_func,vector<int> *func_p,int *on_p,vector<void*> **var,vector<int> **v_type,vector<vector<void*>* >*v_stack,vector<vector<int>* >*v_s_type){
@@ -1014,6 +998,11 @@ void vm(int isfile){
 			break;
 			case change_arr_var:
 			Change_arr_var(&stack,&s_type);
+			break;
+			case delete_var:
+			Push_fast(&stack,&s_type,isfile,onstr,&on_p);
+			delete_void(var,v_type,*(int*)stack.back());
+			Pop(&stack,&s_type);
 			break;
 			default:
 			printf("Error:Unknown code");
