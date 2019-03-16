@@ -22,31 +22,30 @@ vector<List*> path;
 void delete_void(vector<void*> *stack,vector<int> *s_type,int index){
 	switch((*s_type)[index]){
 		case '0'://str
-		delete((string*)((*stack)[index]));
+		delete((string*)*(stack->begin()+index));
 		break;
 		case '1'://int
-		delete((int*)((*stack)[index]));
+		delete((int*)*(stack->begin()+index));
 		break;
 		case '2'://double
-		delete((double*)((*stack)[index]));
+		delete((double*)*(stack->begin()+index));
 		break;
 		case '3'://int_arr
-		delete((Array*)((*stack)[index]));
+		delete((Array*)*(stack->begin()+index));
 		break;
 		case '4'://double_arr
-		delete((Array*)((*stack)[index]));
+		delete((Array*)*(stack->begin()+index));
 		break;
 		case '5'://char
-		delete((char*)((*stack)[index]));
+		delete((char*)*(stack->begin()+index));
 		break;
 		case '6'://list
-		delete((List*)((*stack)[index]));
+		delete((List*)*(stack->begin()+index));
 		break;
-		case '7':
-		delete((func*)((*stack)[index]));//func
+		case '7'://func
+		delete((func*)*(stack->begin()+index));
 		break;
 	}
-	(*s_type)[index]=-1;
 }
 
 void Pop(vector<void*> *stack,vector<int> *s_type){
@@ -308,8 +307,6 @@ void Lprint(List* temp){
 			case '6':
 			Lprint((List*)temp->value[i]);
 			break;
-			default:
-			printf("null");
 		}
 		if(i!=max-1){
 			printf(",");
@@ -342,14 +339,6 @@ void Print(vector<void*> *stack,vector<int> *s_type){
 		case '6':
 		Lprint((List*)stack->back());
 		break;
-		case '8':
-		printf("api-handle");
-		break;
-		case '9':
-		printf("api");
-		break;
-		default:
-		printf("null");
 	}
 	Pop(stack,s_type);
 	printf("\n");
@@ -521,31 +510,31 @@ void Change_var(vector<void*> *stack,vector<void*> *var,vector<int> *s_type,vect
 	delete_void(var,v_type,index);
 	switch(s_type->back()){
 		case '0':
-		(*var)[index]=new string(*(string*)stack->back());
+		*(var->begin()+index)=new string(*(string*)stack->back());
 		break;
 		case '1':
-		(*var)[index]=new int(*(int*)stack->back());
+		*(var->begin()+index)=new int(*(int*)stack->back());
 		break;
 		case '2':
-		(*var)[index]=new double(*(double*)stack->back());
+		*(var->begin()+index)=new double(*(double*)stack->back());
 		break;
 		case '3':
-		(*var)[index]=new Array(*(Array*)stack->back());
+		*(var->begin()+index)=new Array(*(Array*)stack->back());
 		break;
 		case '4':
-		(*var)[index]=new Array(*(Array*)stack->back());
+		*(var->begin()+index)=new Array(*(Array*)stack->back());
 		break;
 		case '5':
-		(*var)[index]=new char(*(char*)stack->back());
+		*(var->begin()+index)=new char(*(char*)stack->back());
 		break;
 		case '6':
-		(*var)[index]=new List(*(List*)stack->back());
+		*(var->begin()+index)=new List(*(List*)stack->back());
 		break;
 		case '8':
-		(*var)[index]=stack->back();
+		*(var->begin()+index)=stack->back();
 		break;
 		case '9':
-		(*var)[index]=stack->back();
+		*(var->begin()+index)=stack->back();
 		break;
 	}
 	Pop(stack,s_type);
@@ -686,6 +675,23 @@ void Call(vector<void*> *stack,vector<int> *s_type,vector<void*> *pool,string **
 	}
 }
 
+void RETURN(string **onstr,vector<string*> *func_s,vector<func*> *on_func,int *on_p,vector<void*> **var,vector<int> **v_type,vector<vector<void*>* >*v_stack,vector<vector<int>* >*v_s_type,vector<int> *func_p){
+	*onstr=func_s->back();
+	func_s->pop_back();
+	on_func->pop_back();
+	*on_p=func_p->back();
+	func_p->pop_back();
+	for(int i=0;i<(*var)->size();i++){
+		delete_void(*var,*v_type,i);
+	}
+	delete(*var);
+	*var=v_stack->back();
+	v_stack->pop_back();
+	delete(*v_type);
+	*v_type=v_s_type->back();
+	v_s_type->pop_back();
+}
+
 void Import_api(vector<void*> *stack,vector<int> *s_type){
 	void *temp=dlopen(((string*)stack->back())->c_str(),RTLD_GLOBAL|RTLD_NOW);
 	if(temp==NULL){
@@ -725,23 +731,6 @@ void Call_api(vector<void*> *stack,vector<int> *s_type){
 		stack->push_back(sign);
 		s_type->push_back(index->type);
 	}
-}
-
-void RETURN(string **onstr,vector<string*> *func_s,vector<func*> *on_func,int *on_p,vector<void*> **var,vector<int> **v_type,vector<vector<void*>* >*v_stack,vector<vector<int>* >*v_s_type,vector<int> *func_p){
-	*onstr=func_s->back();
-	func_s->pop_back();
-	on_func->pop_back();
-	*on_p=func_p->back();
-	func_p->pop_back();
-	for(int i=0;i<(*var)->size();i++){
-		delete_void(*var,*v_type,i);
-	}
-	delete(*var);
-	*var=v_stack->back();
-	v_stack->pop_back();
-	delete(*v_type);
-	*v_type=v_s_type->back();
-	v_s_type->pop_back();
 }
 
 void vm(int isfile){
@@ -948,6 +937,10 @@ void vm(int isfile){
 			case call_api:
 			Call_api(&stack,&s_type);
 			break;
+			case close_api:
+			dlclose(stack.back());
+			Pop(&stack,&s_type);
+			break;
 			default:
 			printf("Error:Unknown code");
 			Sprint(&code);
@@ -959,10 +952,6 @@ void vm(int isfile){
 
 int main(int argc,char* argv[]){
 	fp=fopen(argv[1],"r");
-	if(fp==NULL){
-		printf("文件%s不存在\n",argv[1]);
-		exit(1);
-	}
 	vm(true);
 	fclose(fp);
 	return 0;
