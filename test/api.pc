@@ -1,0 +1,22 @@
+c++ code:
+
+#include "stdtype.h"
+
+extern "C"{
+
+int sum_type='1';
+
+void* sum(List *input){
+	return new int(*(int*)(input->value)[0]+*(int*)(input->value)[1]);
+}
+
+}
+
+false code:
+print(import("./libtest").sum(1,2))
+
+bytecode:
+0x1c 0006 2e2f 6c69 6274 6573 742e 736f
+0x32 0x1c 0002 7375 6d00 0x33 0x2a 0x1c
+1000 0001 0x2c 0x1c 1000 0002 0x2c 0x34
+0x21
