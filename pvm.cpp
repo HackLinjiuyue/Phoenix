@@ -1,67 +1,9 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<math.h>
-#include<vector>
-#include<string>
+#include<dlfcn.h>
 
-#define true 1
-#define false 0
-
-#define null 0x00
-#define iadd 0x01
-#define isub 0x02
-#define imul 0x03
-#define idiv 0x04
-#define imod 0x05
-#define fadd 0x06
-#define fsub 0x07
-#define fmul 0x08
-#define fdiv 0x09
-#define fmod 0x0a
-#define sadd 0x0b
-#define iequal 0x0c
-#define fequal 0x0d
-#define sequal 0x0e
-#define Not 0x0f
-#define Or 0x10
-#define And 0x11
-#define i_greater 0x12
-#define i_less 0x13
-#define f_greater 0x14
-#define f_less 0x15
-#define call 0x16//读取编号获取对象
-#define call_method 0x17//未实现
-#define loop 0x18//先弹出条件后代码块
-#define make_block_for_loop 0x19//标识
-#define end_loop 0x1a//标识，运行时判断条件是否成立
-#define make_func 0x1b//先弹出代码块后弹出参数个数
-#define push_fast 0x1c//立即数入栈
-#define push_const 0x1d//常数入栈
-#define push_var 0x1e//变量入栈
-#define add_const 0x1f//常数加入常量池
-#define add_var 0x20//常数加入变量中
-#define print 0x21
-#define itof 0x22
-#define ftoi 0x23
-#define itos 0x24
-#define ftos 0x25
-#define pop 0x26//运算栈
-#define change_var 0x27//先弹出索引再弹出值
-#define push_int_arr 0x28//静态 1s
-#define push_float_arr 0x29//静态 1s
-#define push_Array 0x2a//动态
-#define get_subscript 0x2b//先下标再数组
-#define push_item 0x2c//先值再数组
-#define pop_item 0x2d//动态数组对象
-#define make_block 0x2e//标记
-#define end_block 0x2f//标记
-#define Return 0x30//返回值压栈后使用
-#define change_arr_var 0x31//先数组再索引再值
-
-#define beginblock_loop "0x19"
-#define endloop "0x1a"
-#define beginblock_func "0x2e"
-#define endfunc "0x2f"
+#include "stdtype.h"
 
 using namespace std;
 
@@ -75,87 +17,33 @@ void Print(vector<void*> *stack,vector<int> *s_type);
 void Sprint(void *value);
 void delete_void(vector<void*> *stack,vector<int> *s_type,int index);
 
-class Array{
-public:
-	void **value;
-	int length=0,type;
-	Array(int type,int length=0){
-		this->type=type;
-		this->length=length;
-		this->value=new void*[length];
-		for(int i=0;i<length;i++){
-			switch(type){
-				case '3':
-				this->value[i]=new int(0);
-				break;
-				case '4':
-				this->value[i]=new double(0.0);
-				break;
-			}
-		}
-	};
-	~Array(){
-		for(int i=0;i<this->length;i++){
-			switch(this->type){
-				case '3':
-				delete((int*)this->value[i]);
-				break;
-				case '4':
-				delete((double*)this->value[i]);
-				break;
-			}
-		}
-	}
-};
-
-class List{
-public:
-	vector<void*> value;
-	vector<int> type;
-	int length=0;
-};
-
-class func{
-public:
-	string *code;
-	int argc,no;
-	func(string *code,int argc){
-		this->code=new string(*code);
-		this->argc=argc;
-		this->no=func_count;
-		func_count++;
-	}
-	~func(){
-		delete(this->code);
-	}
-};
-
 vector<List*> path;
 
 void delete_void(vector<void*> *stack,vector<int> *s_type,int index){
 	switch((*s_type)[index]){
 		case '0'://str
-		delete((string*)*(stack->begin()+index));
+		delete((string*)((*stack)[index]));
 		break;
 		case '1'://int
-		delete((int*)*(stack->begin()+index));
+		delete((int*)((*stack)[index]));
 		break;
 		case '2'://double
-		delete((double*)*(stack->begin()+index));
+		delete((double*)((*stack)[index]));
 		break;
 		case '3'://int_arr
-		delete((Array*)*(stack->begin()+index));
+		delete((Array*)((*stack)[index]));
 		break;
 		case '4'://double_arr
-		delete((Array*)*(stack->begin()+index));
+		delete((Array*)((*stack)[index]));
 		break;
 		case '5'://char
-		delete((char*)*(stack->begin()+index));
+		delete((char*)((*stack)[index]));
 		break;
 		case '6'://list
-		delete((List*)*(stack->begin()+index));
+		delete((List*)((*stack)[index]));
 		break;
-		case '7'://func
+		case '7':
+		delete((func*)((*stack)[index]));//func
 		break;
 	}
 	(*s_type)[index]=-1;
@@ -165,14 +53,6 @@ void Pop(vector<void*> *stack,vector<int> *s_type){
 	delete_void(stack,s_type,stack->size()-1);
 	s_type->pop_back();
 	stack->pop_back();
-}
-
-int wcount(wchar_t **s1){
-	int temp=0;
-	while(*s1[temp]!=0){
-		temp++;
-	}
-	return temp;
 }
 
 int htoi(string *s1,int start,int end){
@@ -190,15 +70,6 @@ int htoi(string *s1,int start,int end){
 		}
 		temp+=sign*pow(16,end-start-1);
 		start++;
-	}
-	return temp;
-}
-
-int getdec(double num){
-	int temp=0;
-	while((int)num!=num){
-		num*=10;
-		temp++;
 	}
 	return temp;
 }
@@ -471,6 +342,12 @@ void Print(vector<void*> *stack,vector<int> *s_type){
 		case '6':
 		Lprint((List*)stack->back());
 		break;
+		case '8':
+		printf("api-handle");
+		break;
+		case '9':
+		printf("api");
+		break;
 		default:
 		printf("null");
 	}
@@ -544,7 +421,7 @@ void Make_func(vector<void*> *stack,vector<int> *s_type,vector<void*> *pool,vect
 	int index=*(int*)stack->back(),no;
 	Pop(stack,s_type);
 	string *onstr=(string*)stack->back();
-	func *temp=new func(onstr,index);
+	func *temp=new func(onstr,index,&func_count);
 	Pop(stack,s_type);
 	pool->push_back(temp);
 	p_type->push_back('7');
@@ -628,6 +505,12 @@ void Push_var(vector<void*> *stack,vector<void*> *var,vector<int> *s_type,vector
 		case '6':
 		stack->push_back(new List(*(List*)(*var)[sign]));
 		break;
+		case '8':
+		stack->push_back((*var)[sign]);
+		break;
+		case '9':
+		stack->push_back((*var)[sign]);
+		break;
 	}
 	s_type->push_back((*v_type)[sign]);
 }
@@ -638,25 +521,31 @@ void Change_var(vector<void*> *stack,vector<void*> *var,vector<int> *s_type,vect
 	delete_void(var,v_type,index);
 	switch(s_type->back()){
 		case '0':
-		*(var->begin()+index)=new string(*(string*)stack->back());
+		(*var)[index]=new string(*(string*)stack->back());
 		break;
 		case '1':
-		*(var->begin()+index)=new int(*(int*)stack->back());
+		(*var)[index]=new int(*(int*)stack->back());
 		break;
 		case '2':
-		*(var->begin()+index)=new double(*(double*)stack->back());
+		(*var)[index]=new double(*(double*)stack->back());
 		break;
 		case '3':
-		*(var->begin()+index)=new Array(*(Array*)stack->back());
+		(*var)[index]=new Array(*(Array*)stack->back());
 		break;
 		case '4':
-		*(var->begin()+index)=new Array(*(Array*)stack->back());
+		(*var)[index]=new Array(*(Array*)stack->back());
 		break;
 		case '5':
-		*(var->begin()+index)=new char(*(char*)stack->back());
+		(*var)[index]=new char(*(char*)stack->back());
 		break;
 		case '6':
-		*(var->begin()+index)=new List(*(List*)stack->back());
+		(*var)[index]=new List(*(List*)stack->back());
+		break;
+		case '8':
+		(*var)[index]=stack->back();
+		break;
+		case '9':
+		(*var)[index]=stack->back();
 		break;
 	}
 	Pop(stack,s_type);
@@ -684,6 +573,12 @@ void Add_var(vector<void*> *stack,vector<void*> *var,vector<int> *s_type,vector<
 		break;
 		case '6':
 		var->push_back(new List(*(List*)stack->back()));
+		break;
+		case '8':
+		var->push_back(stack->back());
+		break;
+		case '9':
+		var->push_back(stack->back());
 		break;
 	}
 	v_type->push_back(s_type->back());
@@ -788,6 +683,47 @@ void Call(vector<void*> *stack,vector<int> *s_type,vector<void*> *pool,string **
 		(*v_type)->push_back(s_type->back());
 		stack->pop_back();
 		s_type->pop_back();
+	}
+}
+
+void Import_api(vector<void*> *stack,vector<int> *s_type){
+	void *temp=dlopen(((string*)stack->back())->c_str(),RTLD_GLOBAL|RTLD_NOW);
+	if(temp==NULL){
+		printf("error:API");
+		Sprint((string*)stack->back());
+		printf("不存在\n");
+		exit(1);
+	}
+	Pop(stack,s_type);
+	stack->push_back(temp);
+	s_type->push_back('8');
+}
+
+void Get_api(vector<void*> *stack,vector<int> *s_type){
+	string temp=*(string*)stack->back();
+	Pop(stack,s_type);
+	void *sign=stack->back();
+	Pop(stack,s_type);
+	FP index=FP(dlsym(sign,temp.c_str()));
+	if(index==NULL){
+		printf("error:API中不存在");
+		Sprint(&temp);
+		printf("\n");
+		exit(1);
+	}
+	stack->push_back(new api_func(*(int*)dlsym(sign,(temp.substr(0,temp.size()-1)+"_type").c_str()),index,temp));
+	s_type->push_back('9');
+}
+
+void Call_api(vector<void*> *stack,vector<int> *s_type){
+	List temp=*(List*)stack->back();
+	Pop(stack,s_type);
+	api_func *index=(api_func*)stack->back();
+	Pop(stack,s_type);
+	void *sign=(*(index->p))(&temp);
+	if(sign!=NULL){
+		stack->push_back(sign);
+		s_type->push_back(index->type);
 	}
 }
 
@@ -1003,16 +939,30 @@ void vm(int isfile){
 			case change_arr_var:
 			Change_arr_var(&stack,&s_type);
 			break;
+			case import_api:
+			Import_api(&stack,&s_type);
+			break;
+			case get_api:
+			Get_api(&stack,&s_type);
+			break;
+			case call_api:
+			Call_api(&stack,&s_type);
+			break;
 			default:
 			printf("Error:Unknown code");
 			Sprint(&code);
 			printf("\n");
+			exit(1);
 		}
 	}
 }
 
 int main(int argc,char* argv[]){
 	fp=fopen(argv[1],"r");
+	if(fp==NULL){
+		printf("文件%s不存在\n",argv[1]);
+		exit(1);
+	}
 	vm(true);
 	fclose(fp);
 	return 0;
