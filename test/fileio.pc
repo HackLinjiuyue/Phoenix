@@ -1,0 +1,16 @@
+false code:
+var in=fopen("./stdtype.h"),out=fopen("./test.txt");
+fwrite(getchar(in),out);
+fclose(out);
+fclose(in);
+
+test.txt(output):
+#
+
+byte code:
+0x1c 0006 2e2f 7374 6474 7970 652e 6800
+0x1c 0001 7200 0x36 0x20 0x1e 1000 0000
+0x37 0x1c 0005 2e2f 7465 7374 2e74 7874
+0x1c 0001 7700 0x36 0x20 0x1e 1000 0001
+0x38 0x1e 1000 0001 0x39 0x1e 1000 0000
+0x39
