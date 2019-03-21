@@ -19,6 +19,8 @@ void delete_void(vector<void*> *stack,vector<int> *s_type,int index);
 
 vector<List*> path;
 
+string *command_line_args=NULL;
+
 void delete_void(vector<void*> *stack,vector<int> *s_type,int index){
 	switch((*s_type)[index]){
 		case '0'://str
@@ -730,6 +732,13 @@ void Write_to_file(vector<void*> *stack,vector<int> *s_type){
 	Pop(stack,s_type);
 }
 
+void Get_command_line_arg(vector<void*> *stack,vector<int> *s_type){
+	int index=*(int*)stack->back();
+	Pop(stack,s_type);
+	stack->push_back(new string(command_line_args[index]));
+	s_type->push_back('0');
+}
+
 void vm(int isfile){
 	string code,*onstr;
 	vector<void*> stack,pool,*var=new vector<void*>();
@@ -951,6 +960,9 @@ void vm(int isfile){
 			fclose((FILE*)stack.back());
 			Pop(&stack,&s_type);
 			break;
+			case get_command_line_arg:
+			Get_command_line_arg(&stack,&s_type);
+			break;
 			default:
 			printf("Error:Unknown code");
 			Sprint(&code);
@@ -961,6 +973,10 @@ void vm(int isfile){
 }
 
 int main(int argc,char* argv[]){
+	command_line_args=new string[argc-2]();
+	for(int i=2;i<argc;i++){
+		command_line_args[i-2]=string(argv[i]);
+	}
 	fp=fopen(argv[1],"r");
 	vm(true);
 	fclose(fp);
