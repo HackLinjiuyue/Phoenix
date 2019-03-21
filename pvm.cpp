@@ -38,9 +38,6 @@ void delete_void(vector<void*> *stack,vector<int> *s_type,int index){
 		case '4'://double_arr
 		delete((Array*)*(stack->begin()+index));
 		break;
-		case '5'://char
-		delete((char*)*(stack->begin()+index));
-		break;
 		case '6'://list
 		delete((List*)*(stack->begin()+index));
 		break;
@@ -173,9 +170,6 @@ void *palloc(int type,void *value){
 		case '4':
 		temp=(new Array(*(Array*)value));
 		break;
-		case '5':
-		temp=(new char(*(char*)value));
-		break;
 		case '6':
 		temp=(new List(*(List*)value));
 		break;
@@ -294,10 +288,6 @@ void Sprint(void *value){
 	printf("\"");
 }
 
-void Cprint(void *value){
-	printf("%c",*(char*)value);
-}
-
 void IAprint(void *value){
 	Array *temp=(Array*)value;
 	int i=0,max=temp->length;
@@ -340,9 +330,6 @@ void Lprint(List* temp){
 			case '4':
 			FAprint(temp->value[i]);
 			break;
-			case '5':
-			Cprint(temp->value[i]);
-			break;
 			case '6':
 			Lprint((List*)temp->value[i]);
 			break;
@@ -374,9 +361,6 @@ void Print(vector<void*> *stack,vector<int> *s_type){
 		break;
 		case '4':
 		FAprint(stack->back());
-		break;
-		case '5':
-		Cprint(stack->back());
 		break;
 		case '6':
 		Lprint((List*)stack->back());
@@ -597,11 +581,13 @@ void Push_Array(vector<void*> *stack,vector<int> *s_type){
 void Get_subscript(vector<void*> *stack,vector<int> *s_type){
 	int t,index=*(int*)stack->back();
 	void *temp;
+	string *onstr=new string();
 	Pop(stack,s_type);
 	switch(s_type->back()){
 		case '0':
-		t='5';
-		temp=new char((*(string*)stack->back())[index]);
+		t='0';
+		(*onstr)+=(*(string*)stack->back())[index];
+		temp=onstr;
 		break;
 		case '3':
 		t='1';
@@ -711,15 +697,17 @@ void Push_file_pointer(vector<void*> *stack,vector<int> *s_type){
 void Getchar(vector<void*> *stack,vector<int> *s_type){
 	FILE *p=(FILE*)stack->back();
 	Pop(stack,s_type);
-	stack->push_back(new char(fgetc(p)));
-	s_type->push_back('5');
+	string *onstr=new string();
+	*onstr+=fgetc(p);
+	stack->push_back(onstr);
+	s_type->push_back('0');
 }
 
 void Write_to_file(vector<void*> *stack,vector<int> *s_type){
 	FILE *p=(FILE*)stack->back();
 	Pop(stack,s_type);
 	string temp;
-	if(s_type->back()=='5'){
+	if(s_type->back()=='0'){
 		temp=string((char*)stack->back());
 	}
 	else{
