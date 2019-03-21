@@ -61,6 +61,7 @@ using namespace std;
 #define getchar_from_file 0x37//文件指针
 #define write_to_file 0x38//先指针再字符串
 #define close_file 0x39//关闭文件
+#define get_command_line_arg 0x3a//获取命令行参数，需要一个索引
 
 #define beginblock_loop "0x19"
 #define endloop "0x1a"
