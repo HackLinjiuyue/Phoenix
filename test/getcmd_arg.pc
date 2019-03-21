@@ -1,0 +1,11 @@
+command_line code:
+./pvm ./filename.pc ./test.pex
+
+false code:
+print(getarg(0))
+
+byte code:
+0x1c 1000 0000 0x3a 0x21
+
+output:
+"./test.pex"
