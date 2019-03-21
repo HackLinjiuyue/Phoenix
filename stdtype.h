@@ -57,6 +57,10 @@ using namespace std;
 #define get_api 0x33//先名称再api
 #define call_api 0x34//先数组再api函数
 #define close_api 0x35//api句柄
+#define push_file_pointer 0x36//先模式再地址
+#define getchar_from_file 0x37//文件指针
+#define write_to_file 0x38//先指针再字符串
+#define close_file 0x39//关闭文件
 
 #define beginblock_loop "0x19"
 #define endloop "0x1a"
