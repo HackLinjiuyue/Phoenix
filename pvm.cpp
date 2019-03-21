@@ -153,6 +153,43 @@ void* parse_const(string *s1){
 	return temp;
 }
 
+void *palloc(int type,void *value){
+	void *temp;
+	switch(type){
+		case '0':
+		temp=(new string(*(string*)value));
+		break;
+		case '1':
+		temp=(new int(*(int*)value));
+		break;
+		case '2':
+		temp=(new double(*(double*)value));
+		break;
+		case '3':
+		temp=(new Array(*(Array*)value));
+		break;
+		case '4':
+		temp=(new Array(*(Array*)value));
+		break;
+		case '5':
+		temp=(new char(*(char*)value));
+		break;
+		case '6':
+		temp=(new List(*(List*)value));
+		break;
+		case '8':
+		temp=value;
+		break;
+		case '9':
+		temp=value;
+		break;
+		case 58://文件句柄
+		temp=value;
+		break;
+	}
+	return temp;
+}
+
 void Iadd(vector<void*> *stack){
 	*(int*)*(stack->end()-2)=*(int*)*(stack->end()-2)+*(int*)stack->back();
 }
@@ -307,6 +344,9 @@ void Lprint(List* temp){
 			case '6':
 			Lprint((List*)temp->value[i]);
 			break;
+			case 58:
+			printf("file handle");
+			break;
 		}
 		if(i!=max-1){
 			printf(",");
@@ -338,6 +378,9 @@ void Print(vector<void*> *stack,vector<int> *s_type){
 		break;
 		case '6':
 		Lprint((List*)stack->back());
+		break;
+		case 58:
+		printf("file handle");
 		break;
 	}
 	Pop(stack,s_type);
@@ -472,35 +515,7 @@ void Push_var(vector<void*> *stack,vector<void*> *var,vector<int> *s_type,vector
 	Push_fast(stack,s_type,isfile,code,start);
 	int sign=*(int*)stack->back();
 	Pop(stack,s_type);
-	switch((*v_type)[sign]){
-		case '0':
-		stack->push_back(new string(*(string*)(*var)[sign]));
-		break;
-		case '1':
-		stack->push_back(new int(*(int*)(*var)[sign]));
-		break;
-		case '2':
-		stack->push_back(new double(*(double*)(*var)[sign]));
-		break;
-		case '3':
-		stack->push_back(new Array(*(Array*)(*var)[sign]));
-		break;
-		case '4':
-		stack->push_back(new Array(*(Array*)(*var)[sign]));
-		break;
-		case '5':
-		stack->push_back(new char(*(char*)(*var)[sign]));
-		break;
-		case '6':
-		stack->push_back(new List(*(List*)(*var)[sign]));
-		break;
-		case '8':
-		stack->push_back((*var)[sign]);
-		break;
-		case '9':
-		stack->push_back((*var)[sign]);
-		break;
-	}
+	stack->push_back(palloc((*v_type)[sign],(*var)[sign]));
 	s_type->push_back((*v_type)[sign]);
 }
 
@@ -508,68 +523,12 @@ void Change_var(vector<void*> *stack,vector<void*> *var,vector<int> *s_type,vect
 	int index=*(int*)stack->back();
 	Pop(stack,s_type);
 	delete_void(var,v_type,index);
-	switch(s_type->back()){
-		case '0':
-		*(var->begin()+index)=new string(*(string*)stack->back());
-		break;
-		case '1':
-		*(var->begin()+index)=new int(*(int*)stack->back());
-		break;
-		case '2':
-		*(var->begin()+index)=new double(*(double*)stack->back());
-		break;
-		case '3':
-		*(var->begin()+index)=new Array(*(Array*)stack->back());
-		break;
-		case '4':
-		*(var->begin()+index)=new Array(*(Array*)stack->back());
-		break;
-		case '5':
-		*(var->begin()+index)=new char(*(char*)stack->back());
-		break;
-		case '6':
-		*(var->begin()+index)=new List(*(List*)stack->back());
-		break;
-		case '8':
-		*(var->begin()+index)=stack->back();
-		break;
-		case '9':
-		*(var->begin()+index)=stack->back();
-		break;
-	}
+	*(var->begin()+index)=palloc(s_type->back(),stack->back());
 	Pop(stack,s_type);
 }
 
 void Add_var(vector<void*> *stack,vector<void*> *var,vector<int> *s_type,vector<int> *v_type){
-	switch(s_type->back()){
-		case '0':
-		var->push_back(new string(*(string*)stack->back()));
-		break;
-		case '1':
-		var->push_back(new int(*(int*)stack->back()));
-		break;
-		case '2':
-		var->push_back(new double(*(double*)stack->back()));
-		break;
-		case '3':
-		var->push_back(new Array(*(Array*)stack->back()));
-		break;
-		case '4':
-		var->push_back(new Array(*(Array*)stack->back()));
-		break;
-		case '5':
-		var->push_back(new char(*(char*)stack->back()));
-		break;
-		case '6':
-		var->push_back(new List(*(List*)stack->back()));
-		break;
-		case '8':
-		var->push_back(stack->back());
-		break;
-		case '9':
-		var->push_back(stack->back());
-		break;
-	}
+	var->push_back(palloc(s_type->back(),stack->back()));
 	v_type->push_back(s_type->back());
 	Pop(stack,s_type);
 }
@@ -731,6 +690,44 @@ void Call_api(vector<void*> *stack,vector<int> *s_type){
 		stack->push_back(sign);
 		s_type->push_back(index->type);
 	}
+}
+
+void Push_file_pointer(vector<void*> *stack,vector<int> *s_type){
+	string mod=*(string*)stack->back(),path;
+	Pop(stack,s_type);
+	path=*(string*)stack->back();
+	Pop(stack,s_type);
+	FILE *p=fopen(path.c_str(),mod.c_str());
+	if(p==NULL){
+		printf("error:文件%s不存在\n",path.c_str());
+		exit(1);
+	}
+	stack->push_back(p);
+	s_type->push_back(58);
+}
+
+void Getchar(vector<void*> *stack,vector<int> *s_type){
+	FILE *p=(FILE*)stack->back();
+	Pop(stack,s_type);
+	stack->push_back(new char(fgetc(p)));
+	s_type->push_back('5');
+}
+
+void Write_to_file(vector<void*> *stack,vector<int> *s_type){
+	FILE *p=(FILE*)stack->back();
+	Pop(stack,s_type);
+	string temp;
+	if(s_type->back()=='5'){
+		temp=string((char*)stack->back());
+	}
+	else{
+		temp=*(string*)stack->back();
+	}
+	if(fputs(temp.c_str(),p)==EOF){
+		printf("error:文件%s写入错误\n",temp.c_str());
+		exit(1);
+	}
+	Pop(stack,s_type);
 }
 
 void vm(int isfile){
@@ -939,6 +936,19 @@ void vm(int isfile){
 			break;
 			case close_api:
 			dlclose(stack.back());
+			Pop(&stack,&s_type);
+			break;
+			case push_file_pointer:
+			Push_file_pointer(&stack,&s_type);
+			break;
+			case getchar_from_file:
+			Getchar(&stack,&s_type);
+			break;
+			case write_to_file:
+			Write_to_file(&stack,&s_type);
+			break;
+			case close_file:
+			fclose((FILE*)stack.back());
 			Pop(&stack,&s_type);
 			break;
 			default:
