@@ -1,5 +1,6 @@
 #include<vector>
 #include<string>
+#include<map>
 
 using namespace std;
 
@@ -66,11 +67,17 @@ using namespace std;
 #define dict_find 0x3c//先字符串再dict
 #define get_dict_subscript 0x3d//先下标再dict
 #define remove_dict 0x3e
+#define Continue 0x3f
+#define Break 0x40
 
 #define beginblock_loop "0x19"
 #define endloop "0x1a"
 #define beginblock_func "0x2e"
 #define endfunc "0x2f"
+
+class data;
+
+void Remove_dict(map<string,data*> *value);
 
 class Array{
 public:
@@ -172,6 +179,17 @@ public:
 		case '7'://func
 		delete((func*)value);
 		break;
+		case 59:
+		Remove_dict((map<string,data*>*)value);
+		break;
 	}
 	}
 };
+
+void Remove_dict(map<string,data*> *value){
+	map<string,data*>::iterator iter;
+	for(iter=value->begin();iter!=value->end();iter++){
+		delete(iter->second);
+	}
+	delete(value);
+}
