@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<math.h>
+#include<map>
 #include<dlfcn.h>
 
 #include "stdtype.h"
@@ -13,7 +14,7 @@ wchar_t onget=0;
 
 int type,func_count=0;
 
-void Print(vector<void*> *stack,vector<int> *s_type);
+void Print(void *value,int type);
 void Sprint(void *value);
 void delete_void(vector<void*> *stack,vector<int> *s_type,int index);
 
@@ -182,6 +183,9 @@ void *palloc(int type,void *value){
 		case 58://文件句柄
 		temp=value;
 		break;
+		case 59://dict
+		temp=value;
+		break;
 	}
 	return temp;
 }
@@ -310,33 +314,21 @@ void FAprint(void *value){
 	printf("%f]",*(double*)(temp->value)[i]);
 }
 
+void Dprint(map<string,data*> *value){
+	map<string,data*>::iterator iter;
+	printf("dict|");
+	for(iter=value->begin();iter!=value->end();iter++){
+		printf("%s:",iter->first.c_str());
+		Print(iter->second->value,iter->second->type);
+		printf(",");
+	}
+}
+
 void Lprint(List* temp){
 	int i=0,max=temp->length;
 	printf("[");
 	while(i<max){
-		switch(temp->type[i]){
-			case '0':
-			Sprint(temp->value[i]);
-			break;
-			case '1':
-			Iprint(temp->value[i]);
-			break;
-			case '2':
-			Fprint(temp->value[i]);
-			break;
-			case '3':
-			IAprint(temp->value[i]);
-			break;
-			case '4':
-			FAprint(temp->value[i]);
-			break;
-			case '6':
-			Lprint((List*)temp->value[i]);
-			break;
-			case 58:
-			printf("file handle");
-			break;
-		}
+		Print(temp->value[i],temp->type[i]);
 		if(i!=max-1){
 			printf(",");
 		}
@@ -345,32 +337,33 @@ void Lprint(List* temp){
 	printf("]");
 }
 
-void Print(vector<void*> *stack,vector<int> *s_type){
-	switch(s_type->back()){
+void Print(void *value,int type){
+	switch(type){
 		case '0':
-		Sprint(stack->back());
+		Sprint(value);
 		break;
 		case '1':
-		Iprint(stack->back());
+		Iprint(value);
 		break;
 		case '2':
-		Fprint(stack->back());
+		Fprint(value);
 		break;
 		case '3':
-		IAprint(stack->back());
+		IAprint(value);
 		break;
 		case '4':
-		FAprint(stack->back());
+		FAprint(value);
 		break;
 		case '6':
-		Lprint((List*)stack->back());
+		Lprint((List*)value);
 		break;
 		case 58:
 		printf("file handle");
 		break;
+		case 59:
+		Dprint((map<string,data*>*)value);
+		break;
 	}
-	Pop(stack,s_type);
-	printf("\n");
 }
 
 void Itof(vector<void*> *stack,vector<int> *s_type){
@@ -583,6 +576,7 @@ void Get_subscript(vector<void*> *stack,vector<int> *s_type){
 	void *temp;
 	string *onstr=new string();
 	Pop(stack,s_type);
+	List *linshi=NULL;
 	switch(s_type->back()){
 		case '0':
 		t='0';
@@ -597,10 +591,33 @@ void Get_subscript(vector<void*> *stack,vector<int> *s_type){
 		t='2';
 		temp=new double(((double*)stack->back())[index]);
 		break;
+		case '6':
+		linshi=(List*)stack->back();
+		if(index>linshi->length){
+			printf("error:数组下标越界\n");
+			exit(1);
+		}
+		t=linshi->type[index];
+		temp=palloc(t,linshi->value[index]);
+		break;
 	}
 	Pop(stack,s_type);
 	stack->push_back(temp);
 	s_type->push_back(t);
+}
+
+void Get_dict_subscript(vector<void*> *stack,vector<int> *s_type){
+	string onstr=*(string*)stack->back();
+	Pop(stack,s_type);
+	map<string,data*> *linshi=(map<string,data*>*)stack->back();
+	Pop(stack,s_type);
+	map<string,data*>::iterator iter=linshi->find(onstr);
+	if(iter==linshi->end()){
+		printf("error:dict没有'%s'键\n",onstr.c_str());
+		exit(1);
+	}
+	stack->push_back(palloc(iter->second->type,iter->second->value));
+	s_type->push_back(iter->second->type);
 }
 
 void Call(vector<void*> *stack,vector<int> *s_type,vector<void*> *pool,string **onstr,vector<func*> *on_func,vector<int> *func_p,int *on_p,vector<void*> **var,vector<int> **v_type,vector<vector<void*>* >*v_stack,vector<vector<int>* >*v_s_type){
@@ -725,6 +742,39 @@ void Get_command_line_arg(vector<void*> *stack,vector<int> *s_type){
 	Pop(stack,s_type);
 	stack->push_back(new string(command_line_args[index]));
 	s_type->push_back('0');
+}
+
+void Dict_insert(vector<void*> *stack,vector<int> *s_type){
+	void *temp=stack->back();
+	int t=s_type->back();
+	stack->pop_back();
+	s_type->pop_back();
+	string name=*(string*)stack->back();
+	Pop(stack,s_type);
+	((map<string,data*>*)stack->back())->insert(map<string,data*>::value_type(name,new data(temp,t)));
+}
+
+void Push_dict(vector<void*> *stack,vector<int> *s_type){
+	stack->push_back(new map<string,data*>());
+	s_type->push_back(59);
+}
+
+void Dict_find(vector<void*> *stack,vector<int> *s_type){
+	string temp=*(string*)stack->back();
+	Pop(stack,s_type);
+	map<string,data*> *t=(map<string,data*>*)stack->back();
+	stack->push_back(new int(t->find(temp)!=t->end()));
+	s_type->push_back('1');
+}
+
+void Remove_dict(vector<void*> *stack,vector<int> *s_type){
+	map<string,data*> *linshi=(map<string,data*>*)stack->back();
+	map<string,data*>::iterator iter;
+	for(iter=linshi->begin();iter!=linshi->end();iter++){
+		delete(iter->second);
+	}
+	delete(linshi);
+	Pop(stack,s_type);
 }
 
 void vm(int isfile){
@@ -869,11 +919,16 @@ void vm(int isfile){
 			case push_var:
 			Push_var(&stack,var,&s_type,v_type,isfile,&on_p,onstr);
 			break;
+			case dict_insert:
+			Dict_insert(&stack,&s_type);
+			break;
 			case add_var:
 			Add_var(&stack,var,&s_type,v_type);
 			break;
 			case print:
-			Print(&stack,&s_type);
+			Print(stack.back(),s_type.back());
+			printf("\n");
+			Pop(&stack,&s_type);
 			break;
 			case itof:
 			Itof(&stack,&s_type);
@@ -954,6 +1009,18 @@ void vm(int isfile){
 			break;
 			case get_command_line_arg:
 			Get_command_line_arg(&stack,&s_type);
+			break;
+			case push_dict:
+			Push_dict(&stack,&s_type);
+			break;
+			case dict_find:
+			Dict_find(&stack,&s_type);
+			break;
+			case get_dict_subscript:
+			Get_dict_subscript(&stack,&s_type);
+			break;
+			case remove_dict:
+			Remove_dict(&stack,&s_type);
 			break;
 			default:
 			printf("Error:Unknown code");
