@@ -1,8 +1,0 @@
-print
-auto text
-input
-
-filein
-auto path
-fileout
-auto text auto path
