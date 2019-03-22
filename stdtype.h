@@ -34,7 +34,7 @@ using namespace std;
 #define push_fast 0x1c//立即数入栈
 #define push_const 0x1d//常数入栈
 #define push_var 0x1e//变量入栈
-//0x1f
+#define dict_insert 0x1f//先值再名再dict
 #define add_var 0x20//常数加入变量中
 #define print 0x21
 #define itof 0x22
@@ -62,6 +62,10 @@ using namespace std;
 #define write_to_file 0x38//先指针再字符串
 #define close_file 0x39//关闭文件
 #define get_command_line_arg 0x3a//获取命令行参数，需要一个索引
+#define push_dict 0x3b//dict操作指针,保留对象，删除后补针对性操作
+#define dict_find 0x3c//先字符串再dict
+#define get_dict_subscript 0x3d//先下标再dict
+#define remove_dict 0x3e
 
 #define beginblock_loop "0x19"
 #define endloop "0x1a"
@@ -134,5 +138,40 @@ public:
 		this->type=type;
 		this->p=p;
 		this->name=name;
+	}
+};
+
+class data{
+public:
+	void *value;
+	int type;
+	data(void *value,int type){
+		this->value=value;
+		this->type=type;
+	};
+	~data(){
+		switch(this->type){
+		case '0'://str
+		delete((string*)value);
+		break;
+		case '1'://int
+		delete((int*)value);
+		break;
+		case '2'://double
+		delete((double*)value);
+		break;
+		case '3'://int_arr
+		delete((Array*)value);
+		break;
+		case '4'://double_arr
+		delete((Array*)value);
+		break;
+		case '6'://list
+		delete((List*)value);
+		break;
+		case '7'://func
+		delete((func*)value);
+		break;
+	}
 	}
 };
