@@ -1,7 +1,6 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<math.h>
-#include<map>
 #include<dlfcn.h>
 
 #include "stdtype.h"
@@ -767,16 +766,6 @@ void Dict_find(vector<void*> *stack,vector<int> *s_type){
 	s_type->push_back('1');
 }
 
-void Remove_dict(vector<void*> *stack,vector<int> *s_type){
-	map<string,data*> *linshi=(map<string,data*>*)stack->back();
-	map<string,data*>::iterator iter;
-	for(iter=linshi->begin();iter!=linshi->end();iter++){
-		delete(iter->second);
-	}
-	delete(linshi);
-	Pop(stack,s_type);
-}
-
 void vm(int isfile){
 	if(getcode(4,NULL,NULL,true)!="phnx"){
 		printf("error:该程序非PVM平台程序\n");
@@ -1020,7 +1009,19 @@ void vm(int isfile){
 			Get_dict_subscript(&stack,&s_type);
 			break;
 			case remove_dict:
-			Remove_dict(&stack,&s_type);
+			Remove_dict((map<string,data*>*)stack.back());
+			Pop(&stack,&s_type);
+			break;
+			case Continue:
+			on_p=0;
+			break;
+			case Break:
+			stack.push_back(new int(0));
+			s_type.push_back('1');
+			End_loop(&stack,&s_type,&loop_s,&loop_p,&on_loop,&on_p,&onstr);
+			if(on_loop==-1&&on_f==-1){
+				isfile=true;
+			}
 			break;
 			default:
 			printf("Error:Unknown code");
