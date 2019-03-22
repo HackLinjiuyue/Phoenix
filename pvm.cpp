@@ -728,7 +728,11 @@ void Get_command_line_arg(vector<void*> *stack,vector<int> *s_type){
 }
 
 void vm(int isfile){
-	string code,*onstr;
+	if(getcode(4,NULL,NULL,true)!="phnx"){
+		printf("error:该程序非PVM平台程序\n");
+		exit(1);
+	}
+	string code=getcode(4,NULL,NULL,true),*onstr;
 	vector<void*> stack,pool,*var=new vector<void*>();
 	vector<int> s_type,p_type,*v_type=new vector<int>(),loop_p,func_p;
 	vector<string*> loop_s,func_s;
@@ -736,6 +740,9 @@ void vm(int isfile){
 	vector<vector<void*>* > v_stack;
 	vector<vector<int>* > v_s_type;
 	int on_loop=-1,on_p=0,on_f=-1;
+	for(int i=0;i<htoi(&code,0,4);i++){
+		Push_fast(&pool,&p_type,isfile,onstr,&on_p);
+	}
 	while(!feof(fp)){
 		code=getcode(4,onstr,&on_p,isfile);
 		if(feof(fp)){
@@ -861,9 +868,6 @@ void vm(int isfile){
 			break;
 			case push_var:
 			Push_var(&stack,var,&s_type,v_type,isfile,&on_p,onstr);
-			break;
-			case add_const:
-			Push_fast(&pool,&s_type,isfile,onstr,&on_p);
 			break;
 			case add_var:
 			Add_var(&stack,var,&s_type,v_type);
