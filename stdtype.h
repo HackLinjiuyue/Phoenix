@@ -34,7 +34,7 @@ using namespace std;
 #define push_fast 0x1c//立即数入栈
 #define push_const 0x1d//常数入栈
 #define push_var 0x1e//变量入栈
-#define add_const 0x1f//常数加入常量池
+//0x1f
 #define add_var 0x20//常数加入变量中
 #define print 0x21
 #define itof 0x22
