@@ -38,6 +38,9 @@ void delete_void(vector<void*> *stack,vector<int> *s_type,int index){
 		case '4'://double_arr
 		delete((Array*)*(stack->begin()+index));
 		break;
+		case '5':
+		delete((char*)*(stack->begin()+index));
+		break;
 		case '6'://list
 		delete((List*)*(stack->begin()+index));
 		break;
@@ -141,12 +144,15 @@ void* parse_const(string *s1){
 		break;
 		case '2':
 		temp=new int(-htoi(s1,0,7));
+		type='1';
 		break;
 		case '3':
 		temp=new double(pow(0.1,htoi(s1,0,1))*htoi(s1,1,7));
+		type='2';
 		break;
 		case '4':
 		temp=new double(-pow(0.1,htoi(s1,0,1))*htoi(s1,1,7));
+		type='2';
 		break;
 	}
 	return temp;
@@ -169,6 +175,9 @@ void *palloc(int type,void *value){
 		break;
 		case '4':
 		temp=(new Array(*(Array*)value));
+		break;
+		case '5':
+		temp=(new char(*(char*)value));
 		break;
 		case '6':
 		temp=(new List(*(List*)value));
@@ -353,6 +362,9 @@ void Print(void *value,int type){
 		case '4':
 		FAprint(value);
 		break;
+		case '5':
+		printf("%c",*(char*)value);
+		break;
 		case '6':
 		Lprint((List*)value);
 		break;
@@ -502,6 +514,7 @@ void Change_var(vector<void*> *stack,vector<void*> *var,vector<int> *s_type,vect
 	Pop(stack,s_type);
 	delete_void(var,v_type,index);
 	*(var->begin()+index)=palloc(s_type->back(),stack->back());
+	*(v_type->begin()+index)=s_type->back();
 	Pop(stack,s_type);
 }
 
@@ -573,13 +586,13 @@ void Push_Array(vector<void*> *stack,vector<int> *s_type){
 void Get_subscript(vector<void*> *stack,vector<int> *s_type){
 	int t,index=*(int*)stack->back();
 	void *temp;
-	string *onstr=new string();
+	char *onstr=new char;
 	Pop(stack,s_type);
 	List *linshi=NULL;
 	switch(s_type->back()){
 		case '0':
-		t='0';
-		(*onstr)+=(*(string*)stack->back())[index];
+		t='5';
+		*onstr=(*(string*)stack->back())[index];
 		temp=onstr;
 		break;
 		case '3':
@@ -713,17 +726,15 @@ void Push_file_pointer(vector<void*> *stack,vector<int> *s_type){
 void Getchar(vector<void*> *stack,vector<int> *s_type){
 	FILE *p=(FILE*)stack->back();
 	Pop(stack,s_type);
-	string *onstr=new string();
-	*onstr+=fgetc(p);
-	stack->push_back(onstr);
-	s_type->push_back('0');
+	stack->push_back(new char(fgetc(p)));
+	s_type->push_back('5');
 }
 
 void Write_to_file(vector<void*> *stack,vector<int> *s_type){
 	FILE *p=(FILE*)stack->back();
 	Pop(stack,s_type);
 	string temp;
-	if(s_type->back()=='0'){
+	if(s_type->back()=='5'){
 		temp=string((char*)stack->back());
 	}
 	else{
@@ -935,7 +946,7 @@ void vm(int isfile){
 			Pop(&stack,&s_type);
 			break;
 			case change_var:
-			Push_fast(&stack,&s_type,isfile,&code,&on_p);
+			Push_fast(&stack,&s_type,isfile,onstr,&on_p);
 			Change_var(&stack,var,&s_type,v_type);
 			break;
 			case push_int_arr:
@@ -1022,6 +1033,23 @@ void vm(int isfile){
 			if(on_loop==-1&&on_f==-1){
 				isfile=true;
 			}
+			break;
+			case cond_Continue:
+			if(*(int*)stack.back()){
+				on_p=0;
+			}
+			Pop(&stack,&s_type);
+			break;
+			case cond_Break:
+			if(*(int*)stack.back()){
+				stack.push_back(new int(0));
+				s_type.push_back('1');
+				End_loop(&stack,&s_type,&loop_s,&loop_p,&on_loop,&on_p,&onstr);
+				if(on_loop==-1&&on_f==-1){
+					isfile=true;
+				}
+			}
+			Pop(&stack,&s_type);
 			break;
 			default:
 			printf("Error:Unknown code");
