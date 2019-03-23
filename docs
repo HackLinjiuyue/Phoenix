@@ -1,0 +1,31 @@
+如何使用接口(C API)功能？
+
+how to use interface of C?
+
+举个例子：
+
+for example:
+
+#include "stdtype.h"
+
+extern "C"{
+
+int sum_type='1';
+
+void* sum(List *input){
+	return new int(*(int*)(input->value)[0]+*(int*)(input->value)[1]);
+}
+
+}
+
+1.你需要包含stdtype内的定义信息，并使用C的符号方式
+
+you should include the definations in stdtype.h and use 'exterm "C"'.
+
+2.函数类型唯一，必须是void*类型，返回值为指针，参数唯一，必须为List*型数据
+
+the type of functions must be void*,and the arg is and must be type List*.
+
+3.在虚拟机中使用api的相关指令即可（如果通过汇编器/编译器进行开发，则使用指定语句即可）
+
+use ins of api(if you develop with compiler or asm,you can just use related code)
