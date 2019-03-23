@@ -69,6 +69,8 @@ using namespace std;
 #define remove_dict 0x3e
 #define Continue 0x3f
 #define Break 0x40
+#define cond_Continue 0x41
+#define cond_Break 0x42
 
 #define beginblock_loop "0x19"
 #define endloop "0x1a"
@@ -172,6 +174,9 @@ public:
 		break;
 		case '4'://double_arr
 		delete((Array*)value);
+		break;
+		case '5':
+		delete((char*)value);
 		break;
 		case '6'://list
 		delete((List*)value);
