@@ -22,9 +22,9 @@ void* sum(List *input){
 
 you should include the definations in stdtype.h and use 'exterm "C"'.
 
-2.函数类型唯一，必须是void*类型，返回值为指针，参数唯一，必须为List*型数据
+2.函数类型唯一，必须是void*类型，返回值为指针，参数唯一，必须为List*型数据，传参内容通过List的value和type属性获取
 
-the type of functions must be void*,and the arg is and must be type List*.
+the type of functions must be void*,and the arg is and must be type List*.You can get args by visit List's value and type.
 
 3.在虚拟机中使用api的相关指令即可（如果通过汇编器/编译器进行开发，则使用指定语句即可）
 
