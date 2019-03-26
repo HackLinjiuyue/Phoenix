@@ -169,3 +169,8 @@ def build(path):
 	with open(path[0:i]+".pc","w") as f:
 		f.write(onstr)
 	print("build-finish")
+
+if __name__=="__main__":
+	import sys,os
+	for i in range(1,len(sys.argv)):
+		build(sys.argv[i])
