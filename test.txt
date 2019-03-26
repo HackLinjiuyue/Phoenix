@@ -1,0 +1,6 @@
+def 1;
+def 2;常量a
+push_const 0;
+push_const 1;
+iadd;
+print;
