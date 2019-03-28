@@ -44,9 +44,6 @@ void delete_void(vector<void*> *stack,vector<int> *s_type,int index){
 		case '6'://list
 		delete((List*)*(stack->begin()+index));
 		break;
-		case '7'://func
-		delete((func*)*(stack->begin()+index));
-		break;
 	}
 }
 
@@ -181,6 +178,9 @@ void *palloc(int type,void *value){
 		break;
 		case '6':
 		temp=(new List(*(List*)value));
+		break;
+		case '7':
+		temp=value;
 		break;
 		case '8':
 		temp=value;
@@ -367,6 +367,9 @@ void Print(void *value,int type){
 		break;
 		case '6':
 		Lprint((List*)value);
+		break;
+		case '7':
+		printf("func");
 		break;
 		case 58:
 		printf("file handle");
@@ -644,14 +647,14 @@ void Call(vector<void*> *stack,vector<int> *s_type,vector<void*> *pool,string **
 	v_s_type->push_back(*v_type);
 	*v_type=new vector<int>();
 	for(int i=0;i<on_func->back()->argc;i++){
-		(*var)->push_back(stack->back());
+		(*var)->push_back(palloc(s_type->back(),stack->back()));
 		(*v_type)->push_back(s_type->back());
-		stack->pop_back();
-		s_type->pop_back();
+		Pop(stack,s_type);
 	}
 }
 
 void RETURN(string **onstr,vector<string*> *func_s,vector<func*> *on_func,int *on_p,vector<void*> **var,vector<int> **v_type,vector<vector<void*>* >*v_stack,vector<vector<int>* >*v_s_type,vector<int> *func_p){
+	delete(*onstr);
 	*onstr=func_s->back();
 	func_s->pop_back();
 	on_func->pop_back();
@@ -800,6 +803,7 @@ void vm(int isfile){
 		}
 		switch(htoi(&code,2,4)){
 			case null:
+			printf("22\n");
 			break;
 			case iadd:
 			Iadd(&stack);
@@ -894,7 +898,7 @@ void vm(int isfile){
 			Loop(&stack,&s_type,&loop_s,&loop_p,&onstr,&on_loop,&isfile,&on_p);
 			break;
 			case make_block_for_loop:
-			if(on_loop!=-1){
+			if(on_loop!=-1||on_f!=-1){
 				Make_block_for_loop(&stack,&s_type,isfile,onstr,&on_p);
 			}
 			else{
