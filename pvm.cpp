@@ -11,7 +11,7 @@ FILE *fp=NULL;
 
 wchar_t onget=0;
 
-int type,func_count=0;
+int type;
 
 void Print(void *value,int type);
 void Sprint(void *value);
@@ -132,7 +132,10 @@ void* parse_const(string *s1){
 		case '0':
 		onstr=new string();
 		for(int i=0;(*s1)[i]!=0;i+=2){
-			*onstr+=htoi(s1,i,i+2);
+			onget=htoi(s1,i,i+2);
+			if(onget!=0){
+				*onstr+=onget;
+			}
 		}
 		temp=onstr;
 		break;
@@ -262,12 +265,38 @@ void Fless(vector<void*> *stack){
 	*(double*)*(stack->end()-2)=*(double*)*(stack->end()-2)<*(double*)stack->back();
 }
 
-void Sadd(vector<void*> *stack){
-	*(string*)*(stack->end()-2)=*(string*)*(stack->end()-2)+*(string*)stack->back();
+void Sadd(vector<void*> *stack,vector<int> *s_type){
+	char *linshi=NULL;
+	if(s_type->back()=='5'){
+		linshi=(char*)*(stack->end()-1);
+		*(stack->end()-1)=new string((char*)stack->back());
+		delete linshi;
+	}
+	if(*(s_type->end()-2)=='5'){
+		linshi=(char*)*(stack->end()-2);
+		*(stack->end()-2)=new string((char*)*(stack->end()-2));
+		*(s_type->end()-2)='0';
+		delete linshi;
+	}
+	*(string*)*(stack->end()-2)=(*(string*)*(stack->end()-2))+*(string*)stack->back();
 }
 
-void Sequal(vector<void*> *stack){
-	*(string*)*(stack->end()-2)=*(string*)*(stack->end()-2)==*(string*)stack->back();
+void Sequal(vector<void*> *stack,vector<int> *s_type){
+	char *linshi=NULL;
+	if(s_type->back()=='5'){
+		linshi=(char*)*(stack->end()-1);
+		*(stack->end()-1)=new string((char*)stack->back());
+		delete linshi;
+	}
+	if(*(s_type->end()-2)=='5'){
+		linshi=(char*)*(stack->end()-2);
+		*(stack->end()-2)=new string((char*)*(stack->end()-2));
+		delete linshi;
+	}
+	*(s_type->end()-2)='1';
+	string temp=*(string*)*(stack->end()-2);
+	delete (string*)*(stack->end()-2);
+	*(stack->end()-2)=new int(temp==*(string*)stack->back());
 }
 
 void NOT(vector<void*> *stack){
@@ -363,7 +392,7 @@ void Print(void *value,int type){
 		FAprint(value);
 		break;
 		case '5':
-		printf("%c",*(char*)value);
+		printf("'%c'",*(char*)value);
 		break;
 		case '6':
 		Lprint((List*)value);
@@ -446,7 +475,7 @@ void Make_func(vector<void*> *stack,vector<int> *s_type,vector<void*> *pool,vect
 	int index=*(int*)stack->back(),no;
 	Pop(stack,s_type);
 	string *onstr=(string*)stack->back();
-	func *temp=new func(onstr,index,&func_count);
+	func *temp=new func(onstr,index);
 	Pop(stack,s_type);
 	pool->push_back(temp);
 	p_type->push_back('7');
@@ -846,7 +875,7 @@ void vm(int isfile){
 			Pop(&stack,&s_type);
 			break;
 			case sadd:
-			Sadd(&stack);
+			Sadd(&stack,&s_type);
 			Pop(&stack,&s_type);
 			break;
 			case iequal:
@@ -858,7 +887,7 @@ void vm(int isfile){
 			Pop(&stack,&s_type);
 			break;
 			case sequal:
-			Sequal(&stack);
+			Sequal(&stack,&s_type);
 			Pop(&stack,&s_type);
 			break;
 			case Not:
