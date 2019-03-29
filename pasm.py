@@ -65,8 +65,8 @@ asm_to_hex={"null":"0x00",
 "remove_dict":"0x3e",
 "Continue":"0x3f",
 "Break":"0x40",
-"cond_Continue":"0x41",
-"cond_Break":"0x42"}
+"if_do":"0x41",
+"end_if":"0x42"}
 
 dth=['0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f']
 
