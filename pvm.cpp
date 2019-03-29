@@ -1038,22 +1038,22 @@ void vm(int isfile){
 				isfile=true;
 			}
 			break;
-			case cond_Continue:
-			if(*(int*)stack.back()){
-				on_p=0;
-			}
-			Pop(&stack,&s_type);
-			break;
-			case cond_Break:
-			if(*(int*)stack.back()){
-				stack.push_back(new int(0));
-				s_type.push_back('1');
-				End_loop(&stack,&s_type,&loop_s,&loop_p,&on_loop,&on_p,&onstr);
-				if(on_loop==-1&&on_f==-1){
-					isfile=true;
+			case if_do:
+			if(!*(int*)stack.back()){
+				int kh=1;
+				while(kh>0){
+					code=getcode(4,onstr,&on_p,isfile);
+					if(code=="0x41"){
+						kh++;
+					}
+					else if(code=="0x42"){
+						kh--;
+					}
 				}
 			}
 			Pop(&stack,&s_type);
+			break;
+			case end_if:
 			break;
 			default:
 			printf("Error:Unknown code");
