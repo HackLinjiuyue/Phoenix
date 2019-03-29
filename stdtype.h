@@ -69,8 +69,8 @@ using namespace std;
 #define remove_dict 0x3e
 #define Continue 0x3f
 #define Break 0x40
-#define cond_Continue 0x41
-#define cond_Break 0x42
+#define if_do 0x41
+#define end_if 0x42
 
 #define beginblock_loop "0x19"
 #define endloop "0x1a"
