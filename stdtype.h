@@ -127,11 +127,9 @@ class func{
 public:
 	string *code;
 	int argc,no;
-	func(string *code,int argc,int *num){
+	func(string *code,int argc){
 		this->code=new string(*code);
 		this->argc=argc;
-		this->no=*num;
-		(*num)++;
 	}
 	~func(){
 		delete(this->code);
