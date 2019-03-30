@@ -138,9 +138,16 @@ def build(path):
 	with open(path) as f:
 		while(1):
 			code=f.readline()
-			if(code==""):
+			if(code=='\n'):
+				continue
+			elif(code==""):
 				break
-			oncode=code.split(";")[0].split(" ")
+			oncode=code.split(";")[0]
+			if(oncode.count(" ")>0):
+				index=oncode.index(" ")
+				oncode=[oncode[0:index],oncode[index+1:]]
+			else:
+				oncode=[oncode]
 			if(oncode[0]!="def"):
 				temp.append(asm_to_hex[oncode[0]])
 				if(len(oncode)>1):
